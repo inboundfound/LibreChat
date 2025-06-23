@@ -1,0 +1,5 @@
+tools: 
+	draftOrSendEmail: 
+		name: draftOrSendEmail 
+		url: https://inboundfound.app.n8n.cloud/webhook/21c64616-25ef-483a-837d-514b7dab70e5 
+		description: "Use this tool"
