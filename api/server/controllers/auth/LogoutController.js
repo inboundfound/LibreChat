@@ -11,6 +11,9 @@ const logoutController = async (req, res) => {
     const { status, message } = logout;
     res.clearCookie('refreshToken');
     res.clearCookie('token_provider');
+    // Clear LG auth cookies if they exist
+    res.clearCookie('ubAuthToken');
+    res.clearCookie('ub_token_provider');
     const response = { message };
     if (
       req.user.openidId != null &&

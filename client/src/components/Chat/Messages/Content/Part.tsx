@@ -4,6 +4,7 @@ import {
   ToolCallTypes,
   imageGenTools,
   isImageVisionTool,
+  Constants,
 } from 'librechat-data-provider';
 import { memo } from 'react';
 import type { TMessageContentParts, TAttachment } from 'librechat-data-provider';
@@ -16,6 +17,7 @@ import WebSearch from './WebSearch';
 import ToolCall from './ToolCall';
 import ImageGen from './ImageGen';
 import Image from './Image';
+import MCPToolDetector from './MCPToolDetector';
 
 type PartProps = {
   part?: TMessageContentParts;
@@ -119,17 +121,28 @@ const Part = memo(
           />
         );
       } else if (isToolCall) {
+        // Check if this is an MCP tool that should trigger a form
+        const isMCPTool = toolCall.name && toolCall.name.includes(Constants.mcp_delimiter);
+        
         return (
-          <ToolCall
-            args={toolCall.args ?? ''}
-            name={toolCall.name || ''}
-            output={toolCall.output ?? ''}
-            initialProgress={toolCall.progress ?? 0.1}
-            isSubmitting={isSubmitting}
-            attachments={attachments}
-            auth={toolCall.auth}
-            expires_at={toolCall.expires_at}
-          />
+          <>
+            <ToolCall
+              args={toolCall.args ?? ''}
+              name={toolCall.name || ''}
+              output={toolCall.output ?? ''}
+              initialProgress={toolCall.progress ?? 0.1}
+              isSubmitting={isSubmitting}
+              attachments={attachments}
+              auth={toolCall.auth}
+              expires_at={toolCall.expires_at}
+            />
+            {isMCPTool && toolCall.output && (
+              <MCPToolDetector
+                toolCall={toolCall}
+                output={toolCall.output}
+              />
+            )}
+          </>
         );
       } else if (toolCall.type === ToolCallTypes.CODE_INTERPRETER) {
         const code_interpreter = toolCall[ToolCallTypes.CODE_INTERPRETER];
@@ -170,14 +183,25 @@ const Part = memo(
           return null;
         }
 
+        // Check if this is an MCP tool that should trigger a form
+        const isMCPTool = toolCall.function.name && toolCall.function.name.includes(Constants.mcp_delimiter);
+        
         return (
-          <ToolCall
-            initialProgress={toolCall.progress ?? 0.1}
-            isSubmitting={isSubmitting}
-            args={toolCall.function.arguments as string}
-            name={toolCall.function.name}
-            output={toolCall.function.output}
-          />
+          <>
+            <ToolCall
+              initialProgress={toolCall.progress ?? 0.1}
+              isSubmitting={isSubmitting}
+              args={toolCall.function.arguments as string}
+              name={toolCall.function.name}
+              output={toolCall.function.output}
+            />
+            {isMCPTool && toolCall.function.output && (
+              <MCPToolDetector
+                toolCall={toolCall.function}
+                output={toolCall.function.output}
+              />
+            )}
+          </>
         );
       }
     } else if (part.type === ContentTypes.IMAGE_FILE) {

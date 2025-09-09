@@ -87,17 +87,17 @@ export default function Message(props: TMessageProps) {
   return (
     <>
       <div
-        className="w-full border-0 bg-transparent dark:border-0 dark:bg-transparent"
+        className="w-full bg-transparent border-0 dark:border-0 dark:bg-transparent"
         onWheel={handleScroll}
         onTouchMove={handleScroll}
       >
-        <div className="m-auto justify-center p-4 py-2 md:gap-6">
+        <div className="justify-center p-4 py-2 m-auto md:gap-6">
           <div
             id={messageId ?? ''}
             aria-label={`message-${message.depth}-${messageId}`}
             className={cn(baseClasses.common, baseClasses.chat, 'message-render')}
           >
-            <div className="relative flex flex-shrink-0 flex-col items-center">
+            <div className="relative flex flex-col items-center flex-shrink-0">
               <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full pt-0.5">
                 <MessageIcon iconData={iconData} assistant={assistant} agent={agent} />
               </div>
@@ -112,7 +112,7 @@ export default function Message(props: TMessageProps) {
                 {name}
               </h2>
               <div className="flex flex-col gap-1">
-                <div className="flex max-w-full flex-grow flex-col gap-0">
+                <div className="flex flex-col flex-grow max-w-full gap-0">
                   <ContentParts
                     edit={edit}
                     isLast={isLast}

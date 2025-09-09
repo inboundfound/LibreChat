@@ -45,7 +45,24 @@ export default function MultiMessage({
     return null;
   }
 
+  // Debug: Log MultiMessage processing
+  console.log('🟡 MultiMessage PROCESSING MESSAGE', {
+    messageId: message.messageId,
+    isCreatedByUser: message.isCreatedByUser,
+    endpoint: message.endpoint,
+    textPreview: message.text?.substring(0, 200),
+    hasContent: !!message.content,
+    contentType: Array.isArray(message.content) ? 'array' : typeof message.content,
+    messageType: message.isCreatedByUser ? 'USER' : 'AI',
+    isAssistantsEndpoint: isAssistantsEndpoint(message.endpoint),
+    timestamp: new Date().toISOString(),
+  });
+
   if (isAssistantsEndpoint(message.endpoint) && message.content) {
+    console.log('🟡 MultiMessage -> MessageParts (Assistants endpoint)', {
+      messageId: message.messageId,
+      messageType: message.isCreatedByUser ? 'USER' : 'AI',
+    });
     return (
       <MessageParts
         key={message.messageId}
@@ -58,6 +75,10 @@ export default function MultiMessage({
       />
     );
   } else if (message.content) {
+    console.log('🟡 MultiMessage -> MessageContent (Direct)', {
+      messageId: message.messageId,
+      messageType: message.isCreatedByUser ? 'USER' : 'AI',
+    });
     return (
       <MessageContent
         key={message.messageId}
@@ -71,6 +92,10 @@ export default function MultiMessage({
     );
   }
 
+  console.log('🟡 MultiMessage -> Message (No content)', {
+    messageId: message.messageId,
+    messageType: message.isCreatedByUser ? 'USER' : 'AI',
+  });
   return (
     <Message
       key={message.messageId}

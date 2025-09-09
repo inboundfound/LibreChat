@@ -77,9 +77,19 @@ export abstract class UserConnectionManager {
       connection = undefined; // Force creation of a new connection
     } else if (connection) {
       if (await connection.isConnected()) {
-        logger.debug(`[MCP][User: ${userId}][${serverName}] Reusing active connection`);
-        this.updateUserLastActivity(userId);
-        return connection;
+        // Check if we have customUserVars with Authorization that would require a new connection
+        const hasAuthToken = customUserVars?.Authorization;
+        if (hasAuthToken) {
+          logger.info(`[MCP][User: ${userId}][${serverName}] Authorization token detected, creating new connection with updated headers`);
+          // Disconnect existing connection to force recreation with new headers
+          await connection.disconnect();
+          this.removeUserConnection(userId, serverName);
+          connection = undefined;
+        } else {
+          logger.debug(`[MCP][User: ${userId}][${serverName}] Reusing active connection`);
+          this.updateUserLastActivity(userId);
+          return connection;
+        }
       } else {
         // Connection exists but is not connected, attempt to remove potentially stale entry
         logger.warn(

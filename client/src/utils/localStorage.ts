@@ -39,7 +39,9 @@ export function clearLocalStorage(skipFirst?: boolean) {
       key === LocalStorageKeys.LAST_SPEC ||
       key === LocalStorageKeys.LAST_TOOLS ||
       key === LocalStorageKeys.LAST_MODEL ||
-      key === LocalStorageKeys.FILES_TO_DELETE
+      key === LocalStorageKeys.FILES_TO_DELETE ||
+      key === 'submittedFormsState' ||
+      key === 'isChatBlockedState'
     ) {
       localStorage.removeItem(key);
     }
@@ -72,7 +74,9 @@ export function clearAllConversationStorage() {
       key.startsWith(LocalStorageKeys.TEXT_DRAFT) ||
       key.startsWith(LocalStorageKeys.ASST_ID_PREFIX) ||
       key.startsWith(LocalStorageKeys.AGENT_ID_PREFIX) ||
-      key.startsWith(LocalStorageKeys.LAST_CONVO_SETUP)
+      key.startsWith(LocalStorageKeys.LAST_CONVO_SETUP) ||
+      key === 'submittedFormsState' ||
+      key === 'isChatBlockedState'
     ) {
       localStorage.removeItem(key);
     }

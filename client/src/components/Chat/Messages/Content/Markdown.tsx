@@ -15,6 +15,7 @@ import MarkdownErrorBoundary from './MarkdownErrorBoundary';
 import { langSubset, preprocessLaTeX } from '~/utils';
 import { unicodeCitation } from '~/components/Web';
 import { code, a, p } from './MarkdownComponents';
+// import { crawlFormPlugin, CrawlFormHandler } from './CrawlFormPlugin';
 import store from '~/store';
 
 type TContentProps = {
@@ -30,7 +31,14 @@ const Markdown = memo(({ content = '', isLatestMessage }: TContentProps) => {
     if (isInitializing) {
       return '';
     }
-    return LaTeXParsing ? preprocessLaTeX(content) : content;
+    const processedContent = LaTeXParsing ? preprocessLaTeX(content) : content;
+    
+    // Debug: Log if content contains our crawl form pattern
+    if (processedContent.includes(':!:!:!:!SHOW_CRAWL_FORM')) {
+      console.log('📋 Markdown content contains SHOW_CRAWL_FORM:', processedContent);
+    }
+    
+    return processedContent;
   }, [content, LaTeXParsing, isInitializing]);
 
   const rehypePlugins = useMemo(
@@ -53,6 +61,7 @@ const Markdown = memo(({ content = '', isLatestMessage }: TContentProps) => {
     remarkGfm,
     remarkDirective,
     artifactPlugin,
+    // crawlFormPlugin, // Removed - using MCP tool detection instead
     [remarkMath, { singleDollarTextMath: false }],
     unicodeCitation,
   ];
@@ -76,19 +85,20 @@ const Markdown = memo(({ content = '', isLatestMessage }: TContentProps) => {
             remarkPlugins={remarkPlugins}
             /* @ts-ignore */
             rehypePlugins={rehypePlugins}
-            components={
-              {
-                code,
-                a,
-                p,
-                artifact: Artifact,
-                citation: Citation,
-                'highlighted-text': HighlightedText,
-                'composite-citation': CompositeCitation,
-              } as {
-                [nodeType: string]: React.ElementType;
-              }
-            }
+                    components={
+          {
+            code,
+            a,
+            p,
+            artifact: Artifact,
+            // 'crawl-form': CrawlFormHandler, // Removed - using MCP tool detection instead
+            citation: Citation,
+            'highlighted-text': HighlightedText,
+            'composite-citation': CompositeCitation,
+          } as {
+            [nodeType: string]: React.ElementType;
+          }
+        }
           >
             {currentContent}
           </ReactMarkdown>
