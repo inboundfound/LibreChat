@@ -93,14 +93,24 @@ registration:
 #   refillIntervalValue: 30
 #   refillIntervalUnit: 'days'
 #   refillAmount: 10000
+# librechat.yaml
+speech:
+  speechTab:
+    conversationMode: true
+    speechToText:
+      autoSendText: 0
+      autoReopenMicDelay: 2000   # Milliseconds to wait after TTS starts (2000 = 2s)
 
-# speech:
-#   tts:
-#     openai:
-#       url: ''
-#       apiKey: '${TTS_API_KEY}'
-#       model: ''
-#       voices: ['']
+  tts:
+    openai:
+      apiKey: '${OPENAI_API_KEY}'
+      model: tts-1                     # or tts-1-hd
+      voices: ['onyx','alloy','echo','nova','fable','shimmer']
+
+  stt:
+    openai:
+      apiKey: '${OPENAI_API_KEY}'
+      model: whisper-1
 
 #
 #   stt:
@@ -133,8 +143,38 @@ actions:
   - "librechat.ai"
   - "google.com"
   - "inboundfound.app.n8n.cloud"
+  - "inboundfound.com"
+  - "black.inboundfound.com"
 
 mcpServers:
+  wordpress:
+    type: sse
+    url: "http://wordpress-mcp-python:8001/sse"
+    serverInstructions: |
+      # CONTEXT & QUALITY STANDARD
+      You are a professional assistant managing WordPress websites. Your output must be a final, professional work product. Do not use placeholders. Do not add a sign-off like 'Best,' or 'Thanks,'; focus only on the main body of the message.
+
+      # AVAILABLE TOOLS
+      - list_sites: List all configured WordPress sites
+      - get_site_info: Get information about a specific site
+      - read_posts: Read posts from a WordPress site
+      - read_post: Read a specific post by ID
+      - read_pages: Read pages from a WordPress site
+      - read_page: Read a specific page by ID
+      - search_content: Search for content across posts and pages
+      - create_post: Create a new WordPress post
+      - update_post: Update an existing post
+      - delete_post: Delete a post
+      - create_page: Create a new WordPress page
+      - update_page: Update an existing page
+      - delete_page: Delete a page
+      - add_site: Add a new WordPress site configuration
+      - remove_site: Remove a site configuration
+      - test_connection: Test connection to a WordPress site
+      - get_users: Get users from a WordPress site
+      - get_media: Get media files from a WordPress site
+      - get_site_status: Get comprehensive status information
+    timeout: 120000
   neo4j_server:
     type: sse
     url: "http://neo4j-mcp-server:8000/sse"
@@ -147,7 +187,7 @@ mcpServers:
       - get_neo4j_schema: Get the database schema.
       - execute_template: Run predefined query templates.
       - list_connections: Show available databases.
-    timeout: 30000
+    timeout: 120000
   draftOrSendEmail:
     type: sse
     url: https://inboundfound.app.n8n.cloud/mcp/create-gmail-email/sse
@@ -160,7 +200,7 @@ mcpServers:
       You are an email assistant that creates professional emails and has the ability to create a draft or send the emails immediately. The emails you generate are REAL and get sent to real people. Your output must be a final, high-quality work product without any placeholders like 'Best, [Your Name]'.
 
       # SIGN-OFF RULE
-      When creating the 'compose' text, end the email body with a friendly closing of "Best," followed by the user's first name on a new line. User's first name is {{LIBRECHAT_USER_NAME}} If for any reason you are unsure of the user's first name, DO NOT add any sign-off at all.
+      When creating the 'compose' text, end the email body with a friendly closing of "Best," followed by the user's first name on a new line. User's first name is their username (typically shown as username: {{LIBRECHAT_USER_NAME}} ) BUT do not literally send emails signed with variables like `{{LIBRECHAT_USER_NAME}}`. If for any reason you are unsure of the user's first name, DO NOT add any sign-off at all.
 
       # YOUR TASK
       To use this tool, you must first create a standard JSON object containing the email details ('to', 'subject', 'compose', 'draft_or_send').
@@ -224,6 +264,21 @@ endpoints:
     maxRecursionLimit: 100
     recursionLimit: 40
   custom:
+    - name: "ParasailKimi"
+      apiKey: "${PARASAIL_API_KEY}"
+      baseURL: "https://api.parasail.io/v1/"
+      models:
+        default:
+          - "parasail-kimi-k2-instruct"
+        fetch: false
+      titleConvo: true
+      titleModel: "parasail-kimi-k2-instruct"
+      summarize: false
+      summaryModel: "parasail-kimi-k2-instruct"
+      forcePrompt: false
+      modelDisplayLabel: "Parasail-Kimi"
+      addParams:
+        max_tokens: 40000  # Lower max_tokens for kimi model
     - name: "Parasail"
       apiKey: "${PARASAIL_API_KEY}"
       baseURL: "https://api.parasail.io/v1/"
@@ -232,15 +287,15 @@ endpoints:
           - "parasail-deepseek-r1-0528"
           - "parasail-deepseek-r1-0528-qwen3-8b"
           - "parasail-deepseek-v3-0324"  # If you still want this one
-        fetch: false
+        fetch: true
       titleConvo: true
       titleModel: "parasail-deepseek-r1-0528"  # Use the newest model for titles
       summarize: false
       summaryModel: "parasail-deepseek-r1-0528"
       forcePrompt: false
-      modelDisplayLabel: "Parasail"
+      modelDisplayLabel: "Parasail-Deepseek"
       addParams:
-        max_tokens: 131072
+        max_tokens: 163840 # 131072
       # capabilities: ["actions", "tools", "file_upload"]
   # assistants:
   #   disableBuilder: false # Disable Assistants Builder Interface by setting to `true`
@@ -317,10 +372,10 @@ endpoints:
       apiKey: '${OPENROUTER_KEY}'
       baseURL: 'https://openrouter.ai/api/v1'
       models:
-        default: ['meta-llama/llama-3-70b-instruct']
+        default: ['deepseek/deepseek-chat-v3-0324']
         fetch: true
       titleConvo: true
-      titleModel: 'meta-llama/llama-3-70b-instruct'
+      titleModel: 'deepseek/deepseek-chat-v3-0324'
       # Recommended: Drop the stop parameter from the request as Openrouter models use a variety of stop tokens.
       dropParams: ['stop']
       modelDisplayLabel: 'OpenRouter'
