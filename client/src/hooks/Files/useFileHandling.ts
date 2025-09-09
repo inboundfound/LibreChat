@@ -1,32 +1,37 @@
-import { useQueryClient } from '@tanstack/react-query';
-import type { TEndpointsConfig, TError } from 'librechat-data-provider';
-import {
-  defaultAssistantsVersion,
-  fileConfig as defaultFileConfig,
-  EModelEndpoint,
-  isAgentsEndpoint,
-  isAssistantsEndpoint,
-  mergeFileConfig,
-  QueryKeys,
-} from 'librechat-data-provider';
-import debounce from 'lodash/debounce';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 } from 'uuid';
+import { useSetRecoilState } from 'recoil';
+import { useToastContext } from '@librechat/client';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  QueryKeys,
+  Constants,
+  EModelEndpoint,
+  EToolResources,
+  mergeFileConfig,
+  isAgentsEndpoint,
+  isAssistantsEndpoint,
+  defaultAssistantsVersion,
+  fileConfig as defaultFileConfig,
+} from 'librechat-data-provider';
+import debounce from 'lodash/debounce';
+import type { EndpointFileConfig, TEndpointsConfig, TError } from 'librechat-data-provider';
 import type { ExtendedFile, FileSetter } from '~/common';
 import { useGetFileConfig, useUploadFileMutation } from '~/data-provider';
 import useLocalize, { TranslationKeys } from '~/hooks/useLocalize';
+import { useDelayedUploadToast } from './useDelayedUploadToast';
+import { processFileForUpload } from '~/utils/heicConverter';
 import { useChatContext } from '~/Providers/ChatContext';
-import { useToastContext } from '~/Providers/ToastContext';
+import { ephemeralAgentByConvoId } from '~/store';
 import { logger, validateFiles } from '~/utils';
 import useClientResize from './useClientResize';
-import { processFileForUpload } from '~/utils/heicConverter';
-import { useDelayedUploadToast } from './useDelayedUploadToast';
 import useUpdateFiles from './useUpdateFiles';
 
 type UseFileHandling = {
-  overrideEndpoint?: EModelEndpoint;
   fileSetter?: FileSetter;
+  overrideEndpoint?: EModelEndpoint;
   fileFilter?: (file: File) => boolean;
+  overrideEndpointFileConfig?: EndpointFileConfig;
   additionalMetadata?: Record<string, string | undefined>;
 };
 
@@ -38,6 +43,9 @@ const useFileHandling = (params?: UseFileHandling) => {
   const abortControllerRef = useRef<AbortController | null>(null);
   const { startUploadTimer, clearUploadTimer } = useDelayedUploadToast();
   const { files, setFiles, setFilesLoading, conversation } = useChatContext();
+  const setEphemeralAgent = useSetRecoilState(
+    ephemeralAgentByConvoId(conversation?.conversationId ?? Constants.NEW_CONVO),
+  );
   const setError = (error: string) => setErrors((prevErrors) => [...prevErrors, error]);
   const { addFile, replaceFile, updateFileById, deleteFileById } = useUpdateFiles(
     params?.fileSetter ?? setFiles,
@@ -132,12 +140,23 @@ const useFileHandling = (params?: UseFileHandling) => {
         const error = _error as TError | undefined;
         console.log('upload error', error);
         const file_id = body.get('file_id');
+        const tool_resource = body.get('tool_resource');
+        if (tool_resource === EToolResources.execute_code) {
+          setEphemeralAgent((prev) => ({
+            ...prev,
+            [EToolResources.execute_code]: false,
+          }));
+        }
         clearUploadTimer(file_id as string);
         deleteFileById(file_id as string);
-        const errorMessage =
-          error?.code === 'ERR_CANCELED'
-            ? 'com_error_files_upload_canceled'
-            : (error?.response?.data?.message ?? 'com_error_files_upload');
+
+        let errorMessage = 'com_error_files_upload';
+
+        if (error?.code === 'ERR_CANCELED') {
+          errorMessage = 'com_error_files_upload_canceled';
+        } else if (error?.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        }
         setError(errorMessage);
       },
     },
@@ -150,6 +169,10 @@ const useFileHandling = (params?: UseFileHandling) => {
 
     const formData = new FormData();
     formData.append('endpoint', endpoint);
+    formData.append(
+      'original_endpoint',
+      conversation?.endpointType || conversation?.endpoint || '',
+    );
     formData.append('file', extendedFile.file as File, encodeURIComponent(filename));
     formData.append('file_id', extendedFile.file_id);
 
@@ -246,10 +269,13 @@ const useFileHandling = (params?: UseFileHandling) => {
         fileList,
         setError,
         endpointFileConfig:
-          fileConfig?.endpoints[endpoint] ??
-          fileConfig?.endpoints.default ??
+          params?.overrideEndpointFileConfig ??
+          fileConfig?.endpoints?.[endpoint] ??
+          fileConfig?.endpoints?.default ??
           defaultFileConfig.endpoints[endpoint] ??
           defaultFileConfig.endpoints.default,
+        toolResource: _toolResource,
+        fileConfig: fileConfig,
       });
     } catch (error) {
       console.error('file validation error', error);

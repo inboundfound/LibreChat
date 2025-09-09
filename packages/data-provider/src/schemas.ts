@@ -112,6 +112,22 @@ export enum ImageDetail {
 }
 
 export enum ReasoningEffort {
+  none = '',
+  minimal = 'minimal',
+  low = 'low',
+  medium = 'medium',
+  high = 'high',
+}
+
+export enum ReasoningSummary {
+  none = '',
+  auto = 'auto',
+  concise = 'concise',
+  detailed = 'detailed',
+}
+
+export enum Verbosity {
+  none = '',
   low = 'low',
   medium = 'medium',
   high = 'high',
@@ -131,6 +147,8 @@ export const imageDetailValue = {
 
 export const eImageDetailSchema = z.nativeEnum(ImageDetail);
 export const eReasoningEffortSchema = z.nativeEnum(ReasoningEffort);
+export const eReasoningSummarySchema = z.nativeEnum(ReasoningSummary);
+export const eVerbositySchema = z.nativeEnum(Verbosity);
 
 export const defaultAssistantFormValues = {
   assistant: '',
@@ -159,11 +177,17 @@ export const defaultAgentFormValues = {
   provider: {},
   projectIds: [],
   artifacts: '',
+  /** @deprecated Use ACL permissions instead */
   isCollaborative: false,
   recursion_limit: undefined,
   [Tools.execute_code]: false,
   [Tools.file_search]: false,
   [Tools.web_search]: false,
+  category: 'general',
+  support_contact: {
+    name: '',
+    email: '',
+  },
 };
 
 export const ImageVisionTool: FunctionTool = {
@@ -199,13 +223,13 @@ export const openAISettings = {
     default: 1 as const,
   },
   presence_penalty: {
-    min: 0 as const,
+    min: -2 as const,
     max: 2 as const,
     step: 0.01 as const,
     default: 0 as const,
   },
   frequency_penalty: {
-    min: 0 as const,
+    min: -2 as const,
     max: 2 as const,
     step: 0.01 as const,
     default: 0 as const,
@@ -343,6 +367,9 @@ export const anthropicSettings = {
       default: LEGACY_ANTHROPIC_MAX_OUTPUT,
     },
   },
+  web_search: {
+    default: false as const,
+  },
 };
 
 export const agentsSettings = {
@@ -362,13 +389,13 @@ export const agentsSettings = {
     default: 1 as const,
   },
   presence_penalty: {
-    min: 0 as const,
+    min: -2 as const,
     max: 2 as const,
     step: 0.01 as const,
     default: 0 as const,
   },
   frequency_penalty: {
-    min: 0 as const,
+    min: -2 as const,
     max: 2 as const,
     step: 0.01 as const,
     default: 0 as const,
@@ -494,6 +521,7 @@ export const tMessageSchema = z.object({
   title: z.string().nullable().or(z.literal('New Chat')).default('New Chat'),
   sender: z.string().optional(),
   text: z.string(),
+  /** @deprecated */
   generation: z.string().nullable().optional(),
   isCreatedByUser: z.boolean(),
   error: z.boolean().optional(),
@@ -521,7 +549,7 @@ export type MemoryArtifact = {
   key: string;
   value?: string;
   tokenCount?: number;
-  type: 'update' | 'delete';
+  type: 'update' | 'delete' | 'error';
 };
 
 export type TAttachmentMetadata = {
@@ -529,6 +557,7 @@ export type TAttachmentMetadata = {
   messageId: string;
   toolCallId: string;
   [Tools.web_search]?: SearchResultData;
+  [Tools.file_search]?: SearchResultData;
   [Tools.memory]?: MemoryArtifact;
 };
 
@@ -590,14 +619,14 @@ export const tConversationSchema = z.object({
   userLabel: z.string().optional(),
   model: z.string().nullable().optional(),
   promptPrefix: z.string().nullable().optional(),
-  temperature: z.number().optional(),
+  temperature: z.number().nullable().optional(),
   topP: z.number().optional(),
   topK: z.number().optional(),
   top_p: z.number().optional(),
   frequency_penalty: z.number().optional(),
   presence_penalty: z.number().optional(),
   parentMessageId: z.string().optional(),
-  maxOutputTokens: coerceNumber.optional(),
+  maxOutputTokens: coerceNumber.nullable().optional(),
   maxContextTokens: coerceNumber.optional(),
   max_tokens: coerceNumber.optional(),
   /* Anthropic */
@@ -605,6 +634,7 @@ export const tConversationSchema = z.object({
   system: z.string().optional(),
   thinking: z.boolean().optional(),
   thinkingBudget: coerceNumber.optional(),
+  stream: z.boolean().optional(),
   /* artifacts */
   artifacts: z.string().optional(),
   /* google */
@@ -619,8 +649,17 @@ export const tConversationSchema = z.object({
   file_ids: z.array(z.string()).optional(),
   /* vision */
   imageDetail: eImageDetailSchema.optional(),
-  /* OpenAI: o1 only */
-  reasoning_effort: eReasoningEffortSchema.optional(),
+  /* OpenAI: Reasoning models only */
+  reasoning_effort: eReasoningEffortSchema.optional().nullable(),
+  reasoning_summary: eReasoningSummarySchema.optional().nullable(),
+  /* OpenAI: Verbosity control */
+  verbosity: eVerbositySchema.optional().nullable(),
+  /* OpenAI: use Responses API */
+  useResponsesApi: z.boolean().optional(),
+  /* OpenAI Responses API / Anthropic API / Google API */
+  web_search: z.boolean().optional(),
+  /* disable streaming */
+  disableStreaming: z.boolean().optional(),
   /* assistant */
   assistant_id: z.string().optional(),
   /* agents */
@@ -642,6 +681,8 @@ export const tConversationSchema = z.object({
   iconURL: z.string().nullable().optional(),
   /* temporary chat */
   expiredAt: z.string().nullable().optional(),
+  /* file token limits */
+  fileTokenLimit: coerceNumber.optional(),
   /** @deprecated */
   resendImages: z.boolean().optional(),
   /** @deprecated */
@@ -717,6 +758,18 @@ export const tQueryParamsSchema = tConversationSchema
     top_p: true,
     /** @endpoints openAI, custom, azureOpenAI */
     max_tokens: true,
+    /** @endpoints openAI, custom, azureOpenAI */
+    reasoning_effort: true,
+    /** @endpoints openAI, custom, azureOpenAI */
+    reasoning_summary: true,
+    /** @endpoints openAI, custom, azureOpenAI */
+    verbosity: true,
+    /** @endpoints openAI, custom, azureOpenAI */
+    useResponsesApi: true,
+    /** @endpoints openAI, anthropic, google */
+    web_search: true,
+    /** @endpoints openAI, custom, azureOpenAI */
+    disableStreaming: true,
     /** @endpoints google, anthropic, bedrock */
     topP: true,
     /** @endpoints google, anthropic */
@@ -744,6 +797,8 @@ export const tQueryParamsSchema = tConversationSchema
      * https://platform.openai.com/docs/api-reference/runs/createRun#runs-createrun-instructions
      * */
     instructions: true,
+    /** @endpoints openAI, google, anthropic */
+    fileTokenLimit: true,
   })
   .merge(
     z.object({
@@ -799,6 +854,8 @@ export const googleBaseSchema = tConversationSchema.pick({
   topK: true,
   thinking: true,
   thinkingBudget: true,
+  web_search: true,
+  fileTokenLimit: true,
   iconURL: true,
   greeting: true,
   spec: true,
@@ -830,6 +887,7 @@ export const googleGenConfigSchema = z
         thinkingBudget: coerceNumber.optional(),
       })
       .optional(),
+    web_search: z.boolean().optional(),
   })
   .strip()
   .optional();
@@ -1044,10 +1102,16 @@ export const openAIBaseSchema = tConversationSchema.pick({
   maxContextTokens: true,
   max_tokens: true,
   reasoning_effort: true,
+  reasoning_summary: true,
+  verbosity: true,
+  useResponsesApi: true,
+  web_search: true,
+  disableStreaming: true,
+  fileTokenLimit: true,
 });
 
 export const openAISchema = openAIBaseSchema
-  .transform((obj: Partial<TConversation>) => removeNullishValues(obj))
+  .transform((obj: Partial<TConversation>) => removeNullishValues(obj, true))
   .catch(() => ({}));
 
 export const compactGoogleSchema = googleBaseSchema
@@ -1087,6 +1151,10 @@ export const anthropicBaseSchema = tConversationSchema.pick({
   greeting: true,
   spec: true,
   maxContextTokens: true,
+  web_search: true,
+  fileTokenLimit: true,
+  stop: true,
+  stream: true,
 });
 
 export const anthropicSchema = anthropicBaseSchema

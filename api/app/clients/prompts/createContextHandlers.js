@@ -1,6 +1,6 @@
 const axios = require('axios');
-const { isEnabled } = require('~/server/utils');
-const { logger } = require('~/config');
+const { logger } = require('@librechat/data-schemas');
+const { isEnabled, generateShortLivedToken } = require('@librechat/api');
 
 const footer = `Use the context as your learned knowledge to better answer the user.
 
@@ -18,7 +18,7 @@ function createContextHandlers(req, userMessageContent) {
   const queryPromises = [];
   const processedFiles = [];
   const processedIds = new Set();
-  const jwtToken = req.headers.authorization.split(' ')[1];
+  const jwtToken = generateShortLivedToken(req.user.id);
   const useFullContext = isEnabled(process.env.RAG_USE_FULL_CONTEXT);
 
   const query = async (file) => {
