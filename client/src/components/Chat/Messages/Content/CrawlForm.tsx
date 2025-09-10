@@ -1,5 +1,4 @@
 import React, { useState, useCallback } from 'react';
-import { useLocalize } from '~/hooks';
 import { Button, Input, Label, TextareaAutosize, SelectDropDown } from '@librechat/client';
 
 interface CrawlFormData {
