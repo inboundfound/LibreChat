@@ -300,7 +300,14 @@ async function createMCPTool({
   });
 }
 
-function createToolInstance({ res, req, toolName, serverName, toolDefinition, provider: _provider }) {
+function createToolInstance({
+  res,
+  req,
+  toolName,
+  serverName,
+  toolDefinition,
+  provider: _provider,
+}) {
   /** @type {LCTool} */
   const { description, parameters } = toolDefinition;
   const isGoogle = _provider === Providers.VERTEXAI || _provider === Providers.GOOGLE;
@@ -360,15 +367,19 @@ function createToolInstance({ res, req, toolName, serverName, toolDefinition, pr
       try {
         const appConfig = await getAppConfig();
         const serverConfig = appConfig?.mcpConfig?.[serverName];
-        
+
         if (serverConfig?.customJWTAuth && req?.headers?.cookie) {
           // Extract the specified cookie from the request
           const parsedCookies = cookies.parse(req.headers.cookie);
           extractedJWTToken = parsedCookies[serverConfig.customJWTAuth];
           if (extractedJWTToken) {
-            logger.debug(`[MCP][${serverName}] Extracted JWT token from cookie: ${serverConfig.customJWTAuth}`);
+            logger.debug(
+              `[MCP][${serverName}] Extracted JWT token from cookie: ${serverConfig.customJWTAuth}`,
+            );
           } else {
-            logger.warn(`[MCP][${serverName}] Cookie ${serverConfig.customJWTAuth} not found in request`);
+            logger.warn(
+              `[MCP][${serverName}] Cookie ${serverConfig.customJWTAuth} not found in request`,
+            );
           }
         }
       } catch (error) {
