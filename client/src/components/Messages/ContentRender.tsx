@@ -144,11 +144,11 @@ const ContentRender = memo(
         tabIndex={showCardRender ? 0 : undefined}
       >
         {isLatestCard && (
-          <div className="absolute right-0 top-0 m-2 h-3 w-3 rounded-full bg-text-primary" />
+          <div className="absolute top-0 right-0 w-3 h-3 m-2 rounded-full bg-text-primary" />
         )}
 
-        <div className="relative flex flex-shrink-0 flex-col items-center">
-          <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full">
+        <div className="relative flex flex-col items-center flex-shrink-0">
+          <div className="flex items-center justify-center w-6 h-6 overflow-hidden rounded-full">
             <MessageIcon iconData={iconData} assistant={assistant} agent={agent} />
           </div>
         </div>
@@ -162,7 +162,7 @@ const ContentRender = memo(
           <h2 className={cn('select-none font-semibold', fontSize)}>{messageLabel}</h2>
 
           <div className="flex flex-col gap-1">
-            <div className="flex max-w-full flex-grow flex-col gap-0">
+            <div className="flex flex-col flex-grow max-w-full gap-0">
               <ContentParts
                 edit={edit}
                 isLast={isLast}

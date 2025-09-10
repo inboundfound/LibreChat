@@ -25,6 +25,7 @@ const { getMCPManager, getFlowStateManager } = require('~/config');
 const { getCachedTools, getAppConfig } = require('./Config');
 const { reinitMCPServer } = require('./Tools/mcp');
 const { getLogStores } = require('~/cache');
+const cookies = require('cookie');
 
 /**
  * @param {object} params
@@ -291,6 +292,7 @@ async function createMCPTool({
 
   return createToolInstance({
     res,
+    req,
     provider,
     toolName,
     serverName,
@@ -298,7 +300,14 @@ async function createMCPTool({
   });
 }
 
-function createToolInstance({ res, toolName, serverName, toolDefinition, provider: _provider }) {
+function createToolInstance({
+  res,
+  req,
+  toolName,
+  serverName,
+  toolDefinition,
+  provider: _provider,
+}) {
   /** @type {LCTool} */
   const { description, parameters } = toolDefinition;
   const isGoogle = _provider === Providers.VERTEXAI || _provider === Providers.GOOGLE;
@@ -312,7 +321,6 @@ function createToolInstance({ res, toolName, serverName, toolDefinition, provide
   }
 
   const normalizedToolKey = `${toolName}${Constants.mcp_delimiter}${normalizeServerName(serverName)}`;
-
   /** @type {(toolArguments: Object | string, config?: GraphRunnableConfig) => Promise<unknown>} */
   const _call = async (toolArguments, config) => {
     const userId = config?.configurable?.user?.id || config?.configurable?.user_id;
@@ -351,8 +359,39 @@ function createToolInstance({ res, toolName, serverName, toolDefinition, provide
         derivedSignal.addEventListener('abort', abortHandler, { once: true });
       }
 
-      const customUserVars =
+      const baseCustomUserVars =
         config?.configurable?.userMCPAuthMap?.[`${Constants.mcp_prefix}${serverName}`];
+
+      // Get MCP server configuration to check for customJWTAuth
+      let extractedJWTToken = null;
+      try {
+        const appConfig = await getAppConfig();
+        const serverConfig = appConfig?.mcpConfig?.[serverName];
+
+        if (serverConfig?.customJWTAuth && req?.headers?.cookie) {
+          // Extract the specified cookie from the request
+          const parsedCookies = cookies.parse(req.headers.cookie);
+          extractedJWTToken = parsedCookies[serverConfig.customJWTAuth];
+          if (extractedJWTToken) {
+            logger.debug(
+              `[MCP][${serverName}] Extracted JWT token from cookie: ${serverConfig.customJWTAuth}`,
+            );
+          } else {
+            logger.warn(
+              `[MCP][${serverName}] Cookie ${serverConfig.customJWTAuth} not found in request`,
+            );
+          }
+        }
+      } catch (error) {
+        logger.warn(`[MCP][${serverName}] Error loading config for customJWTAuth:`, error);
+      }
+
+      // Merge base customUserVars with extracted JWT token if available
+      const customUserVars = { ...baseCustomUserVars };
+      if (extractedJWTToken) {
+        customUserVars.Authorization = `Bearer ${extractedJWTToken}`;
+        logger.debug(`[MCP][${serverName}] Added Authorization header from extracted cookie`);
+      }
 
       const result = await mcpManager.callTool({
         serverName,

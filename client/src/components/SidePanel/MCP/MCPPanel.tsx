@@ -11,6 +11,7 @@ import { MCPPanelProvider, useMCPPanelContext } from '~/Providers';
 import { useLocalize, useMCPConnectionStatus } from '~/hooks';
 import { useGetStartupConfig } from '~/data-provider';
 import MCPPanelSkeleton from './MCPPanelSkeleton';
+import Neo4jServerPanel from './Neo4jServerPanel';
 
 function MCPPanelContent() {
   const localize = useLocalize();
@@ -107,7 +108,14 @@ function MCPPanelContent() {
   }
 
   if (selectedServerNameForEditing) {
-    // Editing View
+    // Check if this is the neo4j_server - use custom panel
+    if (selectedServerNameForEditing === 'neo4j_server') {
+      return (
+        <Neo4jServerPanel serverName={selectedServerNameForEditing} onBack={handleGoBackToList} />
+      );
+    }
+
+    // Editing View for other servers
     const serverBeingEdited = mcpServerDefinitions.find(
       (s) => s.serverName === selectedServerNameForEditing,
     );

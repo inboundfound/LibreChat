@@ -1,3 +1,4 @@
+const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { webcrypto } = require('node:crypto');
@@ -374,6 +375,29 @@ const setAuthTokens = async (userId, res, sessionId = null) => {
       session = result.session;
       refreshToken = result.refreshToken;
       refreshTokenExpires = session.expiration.getTime();
+      console.log('token data', result);
+    }
+
+    // Get LG auth token only if LG_GRAPHQL_ENDPOINT is configured
+    if (process.env.UTILITYBAR_GRAPHQL_URL) {
+      console.log('lg graphql endpoint available', process.env.UTILITYBAR_GRAPHQL_URL);
+      const authData = await getCustomAuthToken(token, process.env.UTILITYBAR_GRAPHQL_URL);
+      if (authData && authData.token) {
+        logger.debug('[setAuthTokens] Setting LG auth token cookie');
+        res.cookie('ubAuthToken', authData.token, {
+          expires: new Date(refreshTokenExpires),
+          httpOnly: true,
+          secure: isProduction,
+          sameSite: 'strict',
+        });
+        res.cookie('ub_token_provider', 'ub_auth', {
+          expires: new Date(refreshTokenExpires),
+          httpOnly: true,
+          secure: isProduction,
+          sameSite: 'strict',
+        });
+      }
+      console.log('ub auth token', authData);
     }
 
     res.cookie('refreshToken', refreshToken, {
@@ -514,6 +538,40 @@ const resendVerificationEmail = async (req) => {
   }
 };
 
+const getCustomAuthToken = async (token, baseUrl) => {
+  try {
+    const response = await axios.post(
+      `${baseUrl}/mcp-auth/token`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    logger.debug('[getCustomAuthToken] Successfully retrieved custom auth token');
+    return response.data;
+  } catch (error) {
+    // Check if the error response contains "User not found"
+    if (error.response && error.response.data) {
+      const errorData = error.response.data;
+      if (
+        errorData.message === 'User not found' &&
+        errorData.error === 'Bad Request' &&
+        errorData.statusCode === 400
+      ) {
+        logger.warn('[getCustomAuthToken] User not found error received:', errorData);
+      }
+    }
+
+    logger.error('[getCustomAuthToken] Error retrieving custom auth token:', error.message);
+    // Don't throw error to avoid breaking the main auth flow
+    return null;
+  }
+};
+
 module.exports = {
   logoutUser,
   verifyEmail,
@@ -523,4 +581,5 @@ module.exports = {
   setOpenIDAuthTokens,
   requestPasswordReset,
   resendVerificationEmail,
+  getCustomAuthToken,
 };

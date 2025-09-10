@@ -36,6 +36,20 @@ const MessageRender = memo(
     setCurrentEditId,
     isSubmittingFamily = false,
   }: MessageRenderProps) => {
+    // Debug: Log when MessageRender processes messages
+    console.log('🔴 MessageRender PROCESSING MESSAGE', {
+      messageId: msg?.messageId,
+      isCreatedByUser: msg?.isCreatedByUser,
+      endpoint: msg?.endpoint,
+      textPreview: msg?.text?.substring(0, 200),
+      hasText: !!msg?.text,
+      textLength: msg?.text?.length || 0,
+      messageType: msg?.isCreatedByUser ? 'USER' : 'AI',
+      isCard,
+      isMultiMessage,
+      timestamp: new Date().toISOString(),
+    });
+
     const {
       ask,
       edit,
@@ -179,7 +193,7 @@ const MessageRender = memo(
                   error={!!(msg.error ?? false)}
                   isSubmitting={isSubmitting}
                   unfinished={msg.unfinished ?? false}
-                  isCreatedByUser={msg.isCreatedByUser ?? true}
+                  isCreatedByUser={msg.isCreatedByUser ?? false}
                   siblingIdx={siblingIdx ?? 0}
                   setSiblingIdx={setSiblingIdx ?? (() => ({}))}
                 />
