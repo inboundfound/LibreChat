@@ -30,7 +30,6 @@ const CrawlForm: React.FC<CrawlFormProps> = ({
   isCancelled = false,
   submittedData,
 }) => {
-  const localize = useLocalize();
   const [formData, setFormData] = useState<CrawlFormData>({
     website: '',
     launchDate: '',

@@ -216,7 +216,7 @@ const ChatForm = memo(({ index = 0 }: { index?: number }) => {
           : 'sm:mb-10',
       )}
     >
-      <div className="relative flex items-stretch flex-1 h-full md:flex-col">
+      <div className="relative flex h-full flex-1 items-stretch md:flex-col">
         <div className={cn('flex w-full items-center', isRTL && 'flex-row-reverse')}>
           {showPlusPopover && !isAssistantsEndpoint(endpoint) && (
             <Mention
@@ -312,7 +312,7 @@ const ChatForm = memo(({ index = 0 }: { index?: number }) => {
                   Array.isArray(conversation?.messages) && conversation.messages.length >= 1
                 }
               />
-              <div className="flex mx-auto" />
+              <div className="mx-auto flex" />
               {SpeechToText && (
                 <AudioRecorder
                   methods={methods}
