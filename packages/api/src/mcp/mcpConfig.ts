@@ -8,4 +8,8 @@ export const mcpConfig = {
   OAUTH_ON_AUTH_ERROR: isEnabled(process.env.MCP_OAUTH_ON_AUTH_ERROR ?? true),
   OAUTH_DETECTION_TIMEOUT: math(process.env.MCP_OAUTH_DETECTION_TIMEOUT ?? 5000),
   CONNECTION_CHECK_TTL: math(process.env.MCP_CONNECTION_CHECK_TTL ?? 60000),
+  /**
+   * Interval for client-side keepalive pings (ms). Defaults to 90s which is below common 120s idle timeouts.
+   */
+  KEEPALIVE_INTERVAL_MS: math(process.env.MCP_KEEPALIVE_INTERVAL_MS ?? 90000),
 };
