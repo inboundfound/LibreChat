@@ -12,7 +12,7 @@ cache: true
 
 # Custom interface configuration
 interface:
-  customWelcome: "Welcome to Inbound Chat!"
+  customWelcome: 'Welcome to Inbound Chat!'
   # Privacy policy settings
   privacyPolicy:
     externalUrl: 'https://librechat.ai/privacy-policy'
@@ -23,7 +23,7 @@ interface:
     externalUrl: 'https://librechat.ai/tos'
     openNewTab: true
     modalAcceptance: true
-    modalTitle: "Terms of Service for LibreChat"
+    modalTitle: 'Terms of Service for LibreChat'
     modalContent: |
       # Terms and Conditions for LibreChat
 
@@ -82,8 +82,7 @@ interface:
 registration:
   socialLogins: ['github', 'google', 'discord', 'openid', 'facebook', 'apple', 'saml']
   allowedDomains:
-  - "inboundfound.com"
-
+    - 'inboundfound.com'
 
 # Example Balance settings
 # balance:
@@ -99,13 +98,13 @@ speech:
     conversationMode: true
     speechToText:
       autoSendText: 0
-      autoReopenMicDelay: 2000   # Milliseconds to wait after TTS starts (2000 = 2s)
+      autoReopenMicDelay: 2000 # Milliseconds to wait after TTS starts (2000 = 2s)
 
   tts:
     openai:
       apiKey: '${OPENAI_API_KEY}'
-      model: tts-1                     # or tts-1-hd
-      voices: ['onyx','alloy','echo','nova','fable','shimmer']
+      model: tts-1 # or tts-1-hd
+      voices: ['onyx', 'alloy', 'echo', 'nova', 'fable', 'shimmer']
 
   stt:
     openai:
@@ -139,17 +138,17 @@ speech:
 
 actions:
   allowedDomains:
-  - "swapi.dev"
-  - "librechat.ai"
-  - "google.com"
-  - "inboundfound.app.n8n.cloud"
-  - "inboundfound.com"
-  - "black.inboundfound.com"
+    - 'swapi.dev'
+    - 'librechat.ai'
+    - 'google.com'
+    - 'inboundfound.app.n8n.cloud'
+    - 'inboundfound.com'
+    - 'black.inboundfound.com'
 
 mcpServers:
   wordpress:
     type: sse
-    url: "http://wordpress-mcp-python:8001/sse"
+    url: 'http://wordpress-mcp-python:8001/sse'
     serverInstructions: |
       # CONTEXT & QUALITY STANDARD
       You are a professional assistant managing WordPress websites. Your output must be a final, professional work product. Do not use placeholders. Do not add a sign-off like 'Best,' or 'Thanks,'; focus only on the main body of the message.
@@ -177,7 +176,7 @@ mcpServers:
     timeout: 120000
   neo4j_server:
     type: sse
-    url: "http://host.docker.internal:8000/sse"
+    url: 'http://host.docker.internal:8000/sse'
     serverInstructions: |
       # CONTEXT & QUALITY STANDARD
       You are a professional assistant using a Neo4j knowledge graph. Your output must be a final, professional work product. Do not use placeholders. Do not add a sign-off like 'Best,' or 'Thanks,'; focus only on the main body of the message.
@@ -195,7 +194,7 @@ mcpServers:
     serverInstructions: |
       # IMPORTANT SYSTEM RULE
       The tool 'create_gmail_email' has a strict, low-level requirement: it only accepts a single parameter named 'input' which MUST be a STRING.
-      
+
       # CONTEXT & QUALITY STANDARD
       You are an email assistant that creates professional emails and has the ability to create a draft or send the emails immediately. The emails you generate are REAL and get sent to real people. Your output must be a final, high-quality work product without any placeholders like 'Best, [Your Name]'.
 
@@ -221,7 +220,7 @@ mcpServers:
   contentAudit:
     type: sse
     url: https://inboundfound.app.n8n.cloud/mcp/run-content-audit/sse
-    name: "Content Audit Engine"
+    name: 'Content Audit Engine'
     description: "Analyze a website's pages for content strategy, donor behavior, and SEO performance in context of relevant data and artifacts"
     timeout: 360000
     serverInstructions: |
@@ -247,9 +246,38 @@ mcpServers:
     url: 'http://host.docker.internal:15532/sse'
     name: 'Pitchmesh and LaunchGuardian operations'
     description: 'Pitchmesh and LaunchGuardian operations via MCP'
-    customJWTAuth: 'ubAuthToken' 
+    customJWTAuth: 'ubAuthToken'
     headers:
       Authorization: '{{Authorization}}'
+  content-audit:
+    type: sse
+    url: 'https://inboundfound.app.n8n.cloud/mcp/run-content-audit/sse'
+    # url: 'https://inboundfound.app.n8n.cloud/mcp/content-audit'
+    name: 'CHOP Foundation Content Audit Engine'
+    description: 'Specialized content strategy and SEO audit engine for CHOP Foundation pages'
+    timeout: 480000
+    serverInstructions: |
+      # IMPORTANT SYSTEM RULE
+      The tool 'content-audit' has a strict, low-level requirement: it only accepts a single parameter named 'input' which MUST be a STRING.
+
+      # CONTEXT & QUALITY STANDARD
+      You are a specialized content strategy and SEO audit engine for CHOP Foundation pages. You provide deep, data-driven audits that analyze current page content, donor behavior, search intent, and SEO performance. Your output MUST be a single, structured markdown audit report. This is a specialized tool used only for CHOP Foundation pages where website content strategy, donor behavior, and SEO performance intersect.
+
+      # YOUR TASK
+      To use this tool, you must first create a standard JSON object containing the audit details ('crawl_number', 'address').
+      Then, you MUST convert that entire JSON object into a single line of text (a string).
+      Finally, you must call the tool, passing that single string as the value for the 'input' parameter.
+
+      # EXAMPLE
+      ## Step 1: Create the object
+      {
+        \"crawl_number\": \"3\",
+        \"address\": \"https://www.chop.edu/giving/get-involved/planned-giving/will-or-living-trust\"
+      }
+
+      ## Step 2: Convert the object to a string and call the tool
+      content-audit(input: \"{\"crawl_number\":\"3\",\"address\":\"https://www.chop.edu/giving/get-involved/planned-giving/will-or-living-trust\"}\")"
+
     #serverInstructions: |
     #  To use the 'create_gmail_draft' tool, you MUST provide a single JSON string for the 'input' parameter.
     #  Example of the exact string to send: "{\"to\":\"test@example.com\",\"subject\":\"My Subject\",\"compose\":\"My email body.\"}"
@@ -271,7 +299,7 @@ mcpServers:
 #    timeout: 300000  # 5 minutes timeout for this server
 
 #  filesystem:
-    # type: stdio
+# type: stdio
 #    command: npx
 #    args:
 #      - -y
@@ -291,110 +319,111 @@ mcpServers:
 endpoints:
   agents:
     disableBuilder: false
-    capabilities: ["execute_code", "file_search", "artifacts", "actions", "tools", "ocr", "chain", "web_search"]
+    capabilities:
+      ['execute_code', 'file_search', 'artifacts', 'actions', 'tools', 'ocr', 'chain', 'web_search']
     maxRecursionLimit: 100
     recursionLimit: 40
   custom:
-    - name: "ParasailKimi"
-      apiKey: "${PARASAIL_API_KEY}"
-      baseURL: "https://api.parasail.io/v1/"
+    - name: 'ParasailKimi'
+      apiKey: '${PARASAIL_API_KEY}'
+      baseURL: 'https://api.parasail.io/v1/'
       models:
         default:
-          - "parasail-kimi-k2-instruct"
+          - 'parasail-kimi-k2-instruct'
         fetch: false
       titleConvo: true
-      titleModel: "parasail-kimi-k2-instruct"
+      titleModel: 'parasail-kimi-k2-instruct'
       summarize: false
-      summaryModel: "parasail-kimi-k2-instruct"
+      summaryModel: 'parasail-kimi-k2-instruct'
       forcePrompt: false
-      modelDisplayLabel: "Parasail-Kimi"
+      modelDisplayLabel: 'Parasail-Kimi'
       addParams:
-        max_tokens: 40000  # Lower max_tokens for kimi model
-    - name: "Parasail"
-      apiKey: "${PARASAIL_API_KEY}"
-      baseURL: "https://api.parasail.io/v1/"
+        max_tokens: 40000 # Lower max_tokens for kimi model
+    - name: 'Parasail'
+      apiKey: '${PARASAIL_API_KEY}'
+      baseURL: 'https://api.parasail.io/v1/'
       models:
         default:
-          - "parasail-deepseek-r1-0528"
-          - "parasail-deepseek-r1-0528-qwen3-8b"
-          - "parasail-deepseek-v3-0324"  # If you still want this one
+          - 'parasail-deepseek-r1-0528'
+          - 'parasail-deepseek-r1-0528-qwen3-8b'
+          - 'parasail-deepseek-v3-0324' # If you still want this one
         fetch: true
       titleConvo: true
-      titleModel: "parasail-deepseek-r1-0528"  # Use the newest model for titles
+      titleModel: 'parasail-deepseek-r1-0528' # Use the newest model for titles
       summarize: false
-      summaryModel: "parasail-deepseek-r1-0528"
+      summaryModel: 'parasail-deepseek-r1-0528'
       forcePrompt: false
-      modelDisplayLabel: "Parasail-Deepseek"
+      modelDisplayLabel: 'Parasail-Deepseek'
       addParams:
         max_tokens: 163840 # 131072
       # capabilities: ["actions", "tools", "file_upload"]
-  # assistants:
-  #   disableBuilder: false # Disable Assistants Builder Interface by setting to `true`
-  #   pollIntervalMs: 3000  # Polling interval for checking assistant updates
-  #   timeoutMs: 180000  # Timeout for assistant operations
-  #   # Should only be one or the other, either `supportedIds` or `excludedIds`
-  #   supportedIds: ["asst_supportedAssistantId1", "asst_supportedAssistantId2"]
-  #   # excludedIds: ["asst_excludedAssistantId"]
-  #   # Only show assistants that the user created or that were created externally (e.g. in Assistants playground).
-  #   # privateAssistants: false # Does not work with `supportedIds` or `excludedIds`
-  #   # (optional) Models that support retrieval, will default to latest known OpenAI models that support the feature
-  #   retrievalModels: ["gpt-4-turbo-preview"]
-  #   # (optional) Assistant Capabilities available to all users. Omit the ones you wish to exclude. Defaults to list below.
-  #   capabilities: ["code_interpreter", "retrieval", "actions", "tools", "image_vision"]
-  # agents:
-  #   # (optional) Default recursion depth for agents, defaults to 25
-  #   recursionLimit: 50
-  #   # (optional) Max recursion depth for agents, defaults to 25
-  #   maxRecursionLimit: 100
-  #   # (optional) Disable the builder interface for agents
-  #   disableBuilder: false
-  #   # (optional) Agent Capabilities available to all users. Omit the ones you wish to exclude. Defaults to list below.
-  #   capabilities: ["execute_code", "file_search", "actions", "tools"]
+    # assistants:
+    #   disableBuilder: false # Disable Assistants Builder Interface by setting to `true`
+    #   pollIntervalMs: 3000  # Polling interval for checking assistant updates
+    #   timeoutMs: 180000  # Timeout for assistant operations
+    #   # Should only be one or the other, either `supportedIds` or `excludedIds`
+    #   supportedIds: ["asst_supportedAssistantId1", "asst_supportedAssistantId2"]
+    #   # excludedIds: ["asst_excludedAssistantId"]
+    #   # Only show assistants that the user created or that were created externally (e.g. in Assistants playground).
+    #   # privateAssistants: false # Does not work with `supportedIds` or `excludedIds`
+    #   # (optional) Models that support retrieval, will default to latest known OpenAI models that support the feature
+    #   retrievalModels: ["gpt-4-turbo-preview"]
+    #   # (optional) Assistant Capabilities available to all users. Omit the ones you wish to exclude. Defaults to list below.
+    #   capabilities: ["code_interpreter", "retrieval", "actions", "tools", "image_vision"]
+    # agents:
+    #   # (optional) Default recursion depth for agents, defaults to 25
+    #   recursionLimit: 50
+    #   # (optional) Max recursion depth for agents, defaults to 25
+    #   maxRecursionLimit: 100
+    #   # (optional) Disable the builder interface for agents
+    #   disableBuilder: false
+    #   # (optional) Agent Capabilities available to all users. Omit the ones you wish to exclude. Defaults to list below.
+    #   capabilities: ["execute_code", "file_search", "actions", "tools"]
 
     # Mistral AI Example
     # - name: 'Mistral' # Unique name for the endpoint
-      # For `apiKey` and `baseURL`, you can use environment variables that you define.
-      # recommended environment variables:
-      # apiKey: '${MISTRAL_API_KEY}'
-      # baseURL: 'https://api.mistral.ai/v1'
+    # For `apiKey` and `baseURL`, you can use environment variables that you define.
+    # recommended environment variables:
+    # apiKey: '${MISTRAL_API_KEY}'
+    # baseURL: 'https://api.mistral.ai/v1'
 
-      # Models configuration
-      # models:
-        # List of default models to use. At least one value is required.
-        # default: ['mistral-tiny', 'mistral-small', 'mistral-medium']
-        # Fetch option: Set to true to fetch models from API.
-        # fetch: true # Defaults to false.
+    # Models configuration
+    # models:
+    # List of default models to use. At least one value is required.
+    # default: ['mistral-tiny', 'mistral-small', 'mistral-medium']
+    # Fetch option: Set to true to fetch models from API.
+    # fetch: true # Defaults to false.
 
-      # Optional configurations
+    # Optional configurations
 
-      # Title Conversation setting
-      # titleConvo: true # Set to true to enable title conversation
+    # Title Conversation setting
+    # titleConvo: true # Set to true to enable title conversation
 
-      # Title Method: Choose between "completion" or "functions".
-      # titleMethod: "completion"  # Defaults to "completion" if omitted.
+    # Title Method: Choose between "completion" or "functions".
+    # titleMethod: "completion"  # Defaults to "completion" if omitted.
 
-      # Title Model: Specify the model to use for titles.
-      # titleModel: 'mistral-tiny' # Defaults to "gpt-3.5-turbo" if omitted.
+    # Title Model: Specify the model to use for titles.
+    # titleModel: 'mistral-tiny' # Defaults to "gpt-3.5-turbo" if omitted.
 
-      # Summarize setting: Set to true to enable summarization.
-      # summarize: false
+    # Summarize setting: Set to true to enable summarization.
+    # summarize: false
 
-      # Summary Model: Specify the model to use if summarization is enabled.
-      # summaryModel: "mistral-tiny"  # Defaults to "gpt-3.5-turbo" if omitted.
+    # Summary Model: Specify the model to use if summarization is enabled.
+    # summaryModel: "mistral-tiny"  # Defaults to "gpt-3.5-turbo" if omitted.
 
-      # Force Prompt setting: If true, sends a `prompt` parameter instead of `messages`.
-      # forcePrompt: false
+    # Force Prompt setting: If true, sends a `prompt` parameter instead of `messages`.
+    # forcePrompt: false
 
-      # The label displayed for the AI model in messages.
-      # modelDisplayLabel: 'Mistral' # Default is "AI" when not set.
+    # The label displayed for the AI model in messages.
+    # modelDisplayLabel: 'Mistral' # Default is "AI" when not set.
 
-      # Add additional parameters to the request. Default params will be overwritten.
-      # addParams:
-      # safe_prompt: true # This field is specific to Mistral AI: https://docs.mistral.ai/api/
+    # Add additional parameters to the request. Default params will be overwritten.
+    # addParams:
+    # safe_prompt: true # This field is specific to Mistral AI: https://docs.mistral.ai/api/
 
-      # Drop Default params parameters from the request. See default params in guide linked below.
-      # NOTE: For Mistral, it is necessary to drop the following parameters or you will encounter a 422 Error:
-      # dropParams: ['stop', 'user', 'frequency_penalty', 'presence_penalty']
+    # Drop Default params parameters from the request. See default params in guide linked below.
+    # NOTE: For Mistral, it is necessary to drop the following parameters or you will encounter a 422 Error:
+    # dropParams: ['stop', 'user', 'frequency_penalty', 'presence_penalty']
 
     # OpenRouter Example
     - name: 'OpenRouter'
@@ -413,21 +442,21 @@ endpoints:
 
     # Portkey AI Example
     #- name: "Portkey"
-      #apiKey: "dummy"
-      #baseURL: 'https://api.portkey.ai/v1'
-      #headers:
-      #    x-portkey-api-key: '${PORTKEY_API_KEY}'
-      #    x-portkey-virtual-key: '${PORTKEY_OPENAI_VIRTUAL_KEY}'
-      #   models:
-      #     default: ['gpt-4o-mini', 'gpt-4o', 'chatgpt-4o-latest']
-      #     fetch: true
-      # titleConvo: true
-      # titleModel: 'current_model'
-      # summarize: false
-      # summaryModel: 'current_model'
-      # forcePrompt: false
-      # modelDisplayLabel: 'Portkey'
-      # iconURL: https://images.crunchbase.com/image/upload/c_pad,f_auto,q_auto:eco,dpr_1/rjqy7ghvjoiu4cd1xjbf
+    #apiKey: "dummy"
+    #baseURL: 'https://api.portkey.ai/v1'
+    #headers:
+    #    x-portkey-api-key: '${PORTKEY_API_KEY}'
+    #    x-portkey-virtual-key: '${PORTKEY_OPENAI_VIRTUAL_KEY}'
+    #   models:
+    #     default: ['gpt-4o-mini', 'gpt-4o', 'chatgpt-4o-latest']
+    #     fetch: true
+    # titleConvo: true
+    # titleModel: 'current_model'
+    # summarize: false
+    # summaryModel: 'current_model'
+    # forcePrompt: false
+    # modelDisplayLabel: 'Portkey'
+    # iconURL: https://images.crunchbase.com/image/upload/c_pad,f_auto,q_auto:eco,dpr_1/rjqy7ghvjoiu4cd1xjbf
 # fileConfig:
 #   endpoints:
 #     assistants:

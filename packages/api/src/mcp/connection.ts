@@ -94,6 +94,10 @@ export class MCPConnection extends EventEmitter {
   iconPath?: string;
   timeout?: number;
   url?: string;
+  /** Keepalive interval reference */
+  private keepAliveTimer: NodeJS.Timeout | null = null;
+  /** Whether the server does not support ping (fallback to a lightweight method) */
+  private pingUnsupported = false;
 
   setRequestHeaders(headers: Record<string, string> | null): void {
     if (!headers) {
@@ -339,6 +343,8 @@ export class MCPConnection extends EventEmitter {
         this.isInitializing = false;
         this.shouldStopReconnecting = false;
         this.reconnectAttempts = 0;
+        this.pingUnsupported = false;
+        this.startKeepAlive();
         /**
          * // FOR DEBUGGING
          * // this.client.setRequestHandler(PingRequestSchema, async (request, extra) => {
@@ -350,10 +356,18 @@ export class MCPConnection extends EventEmitter {
          * //    return {};
          * //  });
          */
-      } else if (state === 'error' && !this.isReconnecting && !this.isInitializing) {
-        this.handleReconnection().catch((error) => {
-          logger.error(`${this.getLogPrefix()} Reconnection handler failed:`, error);
-        });
+      } else {
+        this.stopKeepAlive();
+        if (
+          (state === 'error' || state === 'disconnected') &&
+          !this.isReconnecting &&
+          !this.isInitializing &&
+          !this.shouldStopReconnecting
+        ) {
+          this.handleReconnection().catch((error) => {
+            logger.error(`${this.getLogPrefix()} Reconnection handler failed:`, error);
+          });
+        }
       }
     });
 
@@ -574,6 +588,8 @@ export class MCPConnection extends EventEmitter {
   async connect(): Promise<void> {
     try {
       await this.disconnect();
+      // Allow reconnection attempts again for fresh connect
+      this.shouldStopReconnecting = false;
       await this.connectClient();
       if (!(await this.isConnected())) {
         throw new Error('Connection not established');
@@ -603,6 +619,9 @@ export class MCPConnection extends EventEmitter {
 
   public async disconnect(): Promise<void> {
     try {
+      // Prevent auto-reconnect for intentional disconnects
+      this.shouldStopReconnecting = true;
+      this.stopKeepAlive();
       if (this.transport) {
         await this.client.close();
         this.transport = null;
@@ -708,6 +727,70 @@ export class MCPConnection extends EventEmitter {
         logger.error(`${this.getLogPrefix()} Connection verification failed:`, capabilityError);
         return false;
       }
+    }
+  }
+
+  /** Starts periodic keepalive pings to prevent idle connection closures */
+  private startKeepAlive(): void {
+    try {
+      // Clear any existing timer first
+      this.stopKeepAlive();
+      const interval = mcpConfig.KEEPALIVE_INTERVAL_MS;
+      if (!interval || interval <= 0) {
+        return;
+      }
+      this.keepAliveTimer = setInterval(async () => {
+        // Skip if not connected
+        if (this.connectionState !== 'connected') {
+          return;
+        }
+        try {
+          if (!this.pingUnsupported) {
+            await this.client.ping();
+            this.lastPingTime = Date.now();
+            return;
+          }
+        } catch (error) {
+          // If ping method isn't supported, mark and fall back
+          const msg = (error as Error)?.message ?? '';
+          const unsupported =
+            msg.includes('-32601') ||
+            msg.includes('invalid method ping') ||
+            msg.includes('method not found');
+          if (unsupported) {
+            this.pingUnsupported = true;
+          } else {
+            logger.warn(`${this.getLogPrefix()} Keepalive ping failed`, error);
+            this.emit('connectionChange', 'error');
+            return;
+          }
+        }
+
+        // Fallback keepalive: call a lightweight supported capability
+        try {
+          const capabilities = this.client.getServerCapabilities();
+          if (capabilities?.resources) {
+            await this.client.listResources();
+          } else if (capabilities?.tools) {
+            await this.client.listTools();
+          } else if (capabilities?.prompts) {
+            await this.client.listPrompts();
+          }
+        } catch (fallbackError) {
+          logger.warn(`${this.getLogPrefix()} Keepalive fallback failed`, fallbackError);
+          this.emit('connectionChange', 'error');
+        }
+      }, interval);
+    } catch (e) {
+      logger.warn(`${this.getLogPrefix()} Failed to start keepalive`, e);
+    }
+  }
+
+  /** Stops the keepalive timer if running */
+  private stopKeepAlive(): void {
+    if (this.keepAliveTimer) {
+      clearInterval(this.keepAliveTimer);
+      this.keepAliveTimer = null;
     }
   }
 

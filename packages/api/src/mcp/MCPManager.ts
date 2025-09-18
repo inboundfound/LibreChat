@@ -250,14 +250,20 @@ Please follow these instructions when using tools from the respective MCP server
         }
       }
 
-      if (!(await connection.isConnected())) {
+      if (!connection) {
+        throw new McpError(
+          ErrorCode.InternalError, // Use InternalError for connection issues
+          `${logPrefix} Failed to obtain connection for ${serverName}.`,
+        );
+      }
+      const conn: MCPConnection = connection;
+      if (!(await conn.isConnected())) {
         /** May happen if getUserConnection failed silently or app connection dropped */
         throw new McpError(
           ErrorCode.InternalError, // Use InternalError for connection issues
           `${logPrefix} Connection is not active. Cannot execute tool ${toolName}.`,
         );
       }
-
       const rawConfig = this.getRawConfig(serverName) as t.MCPOptions;
       const currentOptions = processMCPEnv({
         user,
@@ -266,24 +272,49 @@ Please follow these instructions when using tools from the respective MCP server
         body: requestBody,
       });
       if ('headers' in currentOptions) {
-        connection.setRequestHeaders(currentOptions.headers || {});
+        conn.setRequestHeaders(currentOptions.headers || {});
       }
 
-      const result = await connection.client.request(
-        {
-          method: 'tools/call',
-          params: {
-            name: toolName,
-            arguments: toolArguments,
+      const makeRequest = async () =>
+        await conn.client.request(
+          {
+            method: 'tools/call',
+            params: {
+              name: toolName,
+              arguments: toolArguments,
+            },
           },
-        },
-        CallToolResultSchema,
-        {
-          timeout: connection.timeout,
-          resetTimeoutOnProgress: true,
-          ...options,
-        },
-      );
+          CallToolResultSchema,
+          {
+            timeout: conn.timeout,
+            resetTimeoutOnProgress: true,
+            ...options,
+          },
+        );
+
+      let result;
+      try {
+        result = await makeRequest();
+      } catch (err) {
+        const e = err as unknown as { code?: number; message?: string };
+        const isConnClosed =
+          e?.code === -32000 ||
+          (typeof e?.message === 'string' && /connection closed|transport closed/i.test(e.message));
+        if (isConnClosed) {
+          logger.warn(
+            `${logPrefix}[${toolName}] Transport closed during request. Reconnecting and retrying once...`,
+          );
+          try {
+            await conn.connect();
+            result = await makeRequest();
+          } catch (retryErr) {
+            logger.error(`${logPrefix}[${toolName}] Retry after reconnect failed`, retryErr);
+            throw retryErr;
+          }
+        } else {
+          throw err;
+        }
+      }
       if (userId) {
         this.updateUserLastActivity(userId);
       }
