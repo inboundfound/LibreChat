@@ -217,30 +217,6 @@ mcpServers:
 
       ## Step 2: Convert the object to a string and call the tool
       create_gmail_draft(input: "{\"to\":\"test@example.com\",\"subject\":\"My Subject\",\"compose\":\"The body of my email.\",\"draft_or_send\":\"draft\"}")
-  contentAudit:
-    type: sse
-    url: https://inboundfound.app.n8n.cloud/mcp/run-content-audit/sse
-    name: 'Content Audit Engine'
-    description: "Analyze a website's pages for content strategy, donor behavior, and SEO performance in context of relevant data and artifacts"
-    timeout: 360000
-    serverInstructions: |
-      # IMPORTANT SYSTEM RULE
-      The tool 'contentAudit' accepts a single parameter named 'input' which MUST be a single line JSON OBJECT.
-
-      # YOUR TASK
-      To use this tool, first create a JSON object with the audit details ('crawl_number', 'address').
-      Then convert that object into a single line of text (a string).
-      Finally, call the tool, passing that single string as the value for 'input'.
-
-      # EXAMPLE
-      ## Step 1: Create the object
-      {
-        "crawl_number": "3",
-        "address": "https://www.chop.edu/giving/get-involved/planned-giving/will-or-living-trust"
-      }
-
-      ## Step 2: Convert the object to a string and call the tool
-      run_content_audit(input: "{\"crawl_number\":\"3\",\"address\":\"https://www.chop.edu/giving\"}")
   if-core-app-mcp:
     type: sse
     url: 'http://host.docker.internal:15532/sse'
