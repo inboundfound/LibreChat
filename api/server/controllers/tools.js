@@ -5,6 +5,7 @@ const { checkAccess, loadWebSearchAuth } = require('@librechat/api');
 const {
   Tools,
   AuthType,
+  Constants,
   Permissions,
   ToolCallTypes,
   PermissionTypes,
@@ -113,26 +114,39 @@ const callTool = async (req, res) => {
   try {
     const appConfig = req.config;
     const { toolId = '' } = req.params;
-    if (!fieldsMap[toolId]) {
+    
+    // Check if this is an MCP tool (contains _mcp_ in the name)
+    const isMCPTool = toolId.includes('_mcp_') || toolId.includes(Constants.mcp_delimiter);
+    
+    // For non-MCP tools, check if they're in the fieldsMap
+    if (!isMCPTool && !fieldsMap[toolId]) {
       logger.warn(`[${toolId}/call] User ${req.user.id} attempted call to invalid tool`);
       res.status(404).json({ message: 'Tool not found' });
       return;
     }
 
     const { partIndex, blockIndex, messageId, conversationId, ...args } = req.body;
-    if (!messageId) {
+    
+    // For MCP tools, messageId is optional (they can be called standalone)
+    // For built-in tools, messageId is still required
+    if (!isMCPTool && !messageId) {
       logger.warn(`[${toolId}/call] User ${req.user.id} attempted call without message ID`);
       res.status(400).json({ message: 'Message ID required' });
       return;
     }
 
-    const message = await getMessage({ user: req.user.id, messageId });
-    if (!message) {
-      logger.debug(`[${toolId}/call] User ${req.user.id} attempted call with invalid message ID`);
-      res.status(404).json({ message: 'Message not found' });
-      return;
+    // Validate message if messageId is provided
+    if (messageId) {
+      const message = await getMessage({ user: req.user.id, messageId });
+      if (!message) {
+        logger.debug(`[${toolId}/call] User ${req.user.id} attempted call with invalid message ID`);
+        res.status(404).json({ message: 'Message not found' });
+        return;
+      }
     }
-    logger.debug(`[${toolId}/call] User: ${req.user.id}`);
+    
+    logger.debug(`[${toolId}/call] User: ${req.user.id} | MCP Tool: ${isMCPTool}`);
+    
     let hasAccess = true;
     if (toolAccessPermType[toolId]) {
       hasAccess = await checkAccess({
