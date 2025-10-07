@@ -6,6 +6,7 @@ import { crawlFormState, isChatBlockedState, submittedFormsState } from '~/store
 import { useSubmitMessage } from '~/hooks';
 import CrawlForm from './CrawlForm';
 import CustomForm from './CustomForm';
+import OutreachForm from './OutreachForm';
 
 interface MCPToolDetectorProps {
   toolCall: any; // Tool call data
@@ -117,6 +118,114 @@ const MCP_TOOL_CONFIGS = {
       }
     }
   },
+  'render_outreach_generate_form': {
+    triggerForm: true,
+    formType: 'outreach',
+    extractOptions: (output: string) => {
+      try {
+        console.log('🔍 Parsing outreach form output:', output);
+        console.log('🔍 Output type:', typeof output);
+        
+        // The output might be wrapped in an array with a text field
+        let parsedData;
+        
+        try {
+          // First try to parse as JSON array
+          const outputArray = JSON.parse(output);
+          console.log('🔍 Parsed as array:', Array.isArray(outputArray));
+          
+          if (Array.isArray(outputArray) && outputArray.length > 0 && outputArray[0].text) {
+            // Extract the text field and parse again
+            console.log('🔍 Extracting from text field');
+            parsedData = JSON.parse(outputArray[0].text);
+          } else {
+            parsedData = outputArray;
+          }
+        } catch {
+          // If that fails, try parsing directly
+          console.log('🔍 Parsing directly');
+          parsedData = JSON.parse(output);
+        }
+        
+        console.log('🔍 Final parsed data:', parsedData);
+        
+        // Extract senders with company information and sender_group_id
+        const senders = (parsedData.sender_group_list || []).flatMap((group: any) => 
+          (group.senders || []).map((sender: any) => ({
+            id: sender.id,
+            name: sender.name,
+            occupation: sender.occupation,
+            company_name: group.company_details?.name || 'Unknown Company',
+            sender_group_id: group.sender_group_id || ''
+          }))
+        );
+
+        // Extract lists
+        const lists = (parsedData.upload_list_list || []).map((list: any) => ({
+          id: list.id,
+          list_name: list.list_name,
+          leads_count: list.leads_count || 0
+        }));
+
+        // Extract campaigns
+        const campaigns = (parsedData.campaign_list || []).map((campaign: any) => ({
+          id: campaign.id,
+          name: campaign.name,
+          campaign_goal: campaign.campaign_goal,
+          description: campaign.description
+        }));
+
+        // Extract templates
+        const templates = (parsedData.email_template_list || []).map((template: any) => ({
+          id: template.id,
+          name: template.name,
+          subject_line: template.subject_line,
+          body: template.body
+        }));
+
+        // Extract ICPs
+        const icps = (parsedData.icp_list || []).map((icp: any) => ({
+          element_id: icp.element_id,
+          title: icp.title,
+          manual_query: icp.manual_query,
+          target_industry: icp.target_industry,
+          target_level: icp.target_level,
+          target_dept: icp.target_dept
+        }));
+
+        console.log('✅ Extracted outreach options:', {
+          senders: senders.length,
+          lists: lists.length,
+          campaigns: campaigns.length,
+          templates: templates.length,
+          icps: icps.length,
+          sendersData: senders,
+          listsData: lists,
+          campaignsData: campaigns,
+          templatesData: templates,
+          icpsData: icps
+        });
+
+        return {
+          senders,
+          lists,
+          campaigns,
+          templates,
+          icps
+        };
+      } catch (e) {
+        console.error('❌ Failed to parse outreach form options:', e);
+        console.error('❌ Output was:', output);
+        return {
+          senders: [],
+          lists: [],
+          campaigns: [],
+          templates: [],
+          icps: []
+        };
+      }
+    }
+  },
   // Add more MCP tool configurations here
 };
 
@@ -186,23 +295,31 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
     });
 
     // Extract options if available
-    let options: any[] = [];
+    let options: any = [];
     if (toolConfig.extractOptions) {
       options = toolConfig.extractOptions(output);
       console.log('📋 MCP Tool Detector: Extracted options', {
         function_name,
-        optionsCount: options.length,
         options,
       });
     }
 
+    // Check if we have valid options (array with length or object with data)
+    const hasValidOptions = Array.isArray(options) 
+      ? options.length > 0 
+      : (options && typeof options === 'object' && Object.keys(options).length > 0 && 
+         // For object-based options (like outreach), check if at least one property has data
+         Object.values(options).some((val: any) => 
+           Array.isArray(val) ? val.length > 0 : !!val
+         ));
+
     // If we have options, trigger the form
-    if (options.length > 0) {
+    if (hasValidOptions) {
       console.log('✅ MCP Tool Detector: Options found, triggering form', {
         function_name,
         requestId,
         formId,
-        optionsCount: options.length,
+        options,
       });
 
       // Set chat as blocked for this specific conversation
@@ -231,7 +348,14 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
         function_name,
         requestId,
         formType: toolConfig.formType,
-        optionsCount: options.length,
+      });
+    } else {
+      console.warn('⚠️ MCP Tool Detector: No valid options found, form not triggered', {
+        function_name,
+        hasOptions: !!options,
+        options,
+        isArray: Array.isArray(options),
+        hasKeys: options && typeof options === 'object' ? Object.keys(options).length : 0,
       });
     }
   }, [toolConfig, output, function_name, serverName, formId, setChatBlocked, setSubmittedForms]);
@@ -258,13 +382,40 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
       data,
     });
 
+    // Prepare submitted data with labels based on form type
+    let submittedDataWithLabels = { ...data };
+
+    if (toolConfig?.formType === 'outreach') {
+      const options = (thisFormState as any).options || {};
+      const sender = options.senders?.find((s: any) => s.id === data.sender_id);
+      const list = options.lists?.find((l: any) => l.id === data.list_id);
+      const campaign = options.campaigns?.find((c: any) => c.id === data.campaign_id);
+      const template = options.templates?.find((t: any) => t.id === data.template_id);
+
+      submittedDataWithLabels = {
+        ...data,
+        senderLabel: sender ? `${sender.name} (${sender.occupation || 'No title'}) at ${sender.company_name}` : undefined,
+        listLabel: list ? `${list.list_name} (${Math.floor(list.leads_count)} contacts)` : undefined,
+        campaignLabel: campaign?.name,
+        templateLabel: template?.name,
+      };
+    } else if (toolConfig?.formType === 'crawl') {
+      const websiteLabel = (thisFormState as any).options?.find((opt: any) => opt.value === data.website)?.label;
+      if (websiteLabel) {
+        submittedDataWithLabels = {
+          ...data,
+          websiteLabel,
+        };
+      }
+    }
+
     // Update form state
     setSubmittedForms(prev => ({
       ...prev,
       [formId]: {
         ...prev[formId],
         isSubmitted: true,
-        submittedData: data,
+        submittedData: submittedDataWithLabels,
       },
     }));
 
@@ -276,6 +427,15 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
       const launchDate = data.launchDate ? new Date(data.launchDate).toLocaleString() : 'Not specified';
       
       message = `I have submitted the crawl configuration with the following details:\n\n🌐 **Website:** ${websiteLabel}\n📅 **Launch Date:** ${launchDate}\n📝 **Description:** ${data.description || 'Not specified'}\n\nPlease proceed with the crawl based on these details.`;
+    } else if (toolConfig?.formType === 'outreach') {
+      // Handle outreach form submission
+      const options = (thisFormState as any).options || {};
+      const sender = options.senders?.find((s: any) => s.id === data.sender_id);
+      const list = options.lists?.find((l: any) => l.id === data.list_id);
+      const campaign = options.campaigns?.find((c: any) => c.id === data.campaign_id);
+      const template = options.templates?.find((t: any) => t.id === data.template_id);
+
+      message = `I have submitted the outreach campaign configuration with the following details:\n\n👤 **Sender:** ${sender?.name || 'Unknown'} (${sender?.occupation || 'No title'}) at ${sender?.company_name || 'Unknown Company'}\n📋 **Target List:** ${list?.list_name || 'Unknown'} (${list?.leads_count || 0} contacts)\n🎯 **Campaign:** ${campaign?.name || 'Unknown'}\n✉️ **Email Template:** ${template?.name || 'Unknown'}\n\nPlease proceed to generate the personalized outreach campaign.`;
     } else {
       // Handle custom form submission with dynamic field generation
       const formFields = (thisFormState as any).options || [];
@@ -387,6 +547,38 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
           isSubmitted={thisFormState.isSubmitted}
           isCancelled={thisFormState.isCancelled}
           submittedData={thisFormState.submittedData}
+        />
+      </>
+    );
+  }
+
+  if (toolConfig.formType === 'outreach') {
+    const options = (thisFormState as any).options || {};
+    return (
+      <>
+        {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
+          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 dark:bg-orange-900/20 p-4 shadow-lg">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                Chat is disabled - Please complete the form below
+              </span>
+            </div>
+          </div>
+        )}
+        
+        <OutreachForm
+          onSubmit={handleFormSubmit}
+          onCancel={handleFormCancel}
+          senderOptions={options.senders || []}
+          listOptions={options.lists || []}
+          campaignOptions={options.campaigns || []}
+          templateOptions={options.templates || []}
+          icpOptions={options.icps || []}
+          isSubmitted={thisFormState.isSubmitted}
+          isCancelled={thisFormState.isCancelled}
+          submittedData={thisFormState.submittedData as any}
+          serverName={serverName}
         />
       </>
     );
