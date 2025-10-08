@@ -428,14 +428,43 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
       
       message = `I have submitted the crawl configuration with the following details:\n\n🌐 **Website:** ${websiteLabel}\n📅 **Launch Date:** ${launchDate}\n📝 **Description:** ${data.description || 'Not specified'}\n\nPlease proceed with the crawl based on these details.`;
     } else if (toolConfig?.formType === 'outreach') {
-      // Handle outreach form submission
+      // Handle outreach form submission with tool response
       const options = (thisFormState as any).options || {};
       const sender = options.senders?.find((s: any) => s.id === data.sender_id);
-      const list = options.lists?.find((l: any) => l.id === data.list_id);
       const campaign = options.campaigns?.find((c: any) => c.id === data.campaign_id);
       const template = options.templates?.find((t: any) => t.id === data.template_id);
 
-      message = `I have submitted the outreach campaign configuration with the following details:\n\n👤 **Sender:** ${sender?.name || 'Unknown'} (${sender?.occupation || 'No title'}) at ${sender?.company_name || 'Unknown Company'}\n📋 **Target List:** ${list?.list_name || 'Unknown'} (${list?.leads_count || 0} contacts)\n🎯 **Campaign:** ${campaign?.name || 'Unknown'}\n✉️ **Email Template:** ${template?.name || 'Unknown'}\n\nPlease proceed to generate the personalized outreach campaign.`;
+      // Parse the tool response to extract operation IDs or error
+      let operationInfo = '';
+      if (data.toolResponse?.result) {
+        try {
+          const result = typeof data.toolResponse.result === 'string' 
+            ? JSON.parse(data.toolResponse.result)
+            : data.toolResponse.result;
+
+          // Check if it's a successful response with operation IDs
+          if (result.if_pm?.create_sequential_operation?.success) {
+            const opData = result.if_pm.create_sequential_operation.data;
+            operationInfo = `\n\n✅ **Operation Status:** Successfully created\n📋 **Main Operation ID:** ${opData.mainOpId}\n🚀 **Outreach Operation ID:** ${opData.outreachOpId}`;
+          } else if (result.if_pm?.create_sequential_operation?.success === false) {
+            // Failed operation
+            const errorMsg = result.if_pm.create_sequential_operation.error || 'Unknown error';
+            operationInfo = `\n\n❌ **Operation Status:** Failed\n⚠️ **Error:** ${errorMsg}`;
+          } else {
+            // If result is just an error string
+            operationInfo = `\n\n❌ **Operation Status:** Failed\n⚠️ **Error:** ${result}`;
+          }
+        } catch (parseError) {
+          // If parsing fails, treat the result as an error message
+          operationInfo = `\n\n❌ **Operation Status:** Failed\n⚠️ **Error:** ${data.toolResponse.result}`;
+        }
+      }
+
+      const audienceInfo = data.audience_type === 'existing' 
+        ? `${data.selected_people?.length || 0} selected contacts`
+        : `Manual LinkedIn URLs`;
+
+      message = `I have submitted the outreach campaign configuration:\n\n👤 **Sender:** ${sender?.name || 'Unknown'} (${sender?.occupation || 'No title'}) at ${sender?.company_name || 'Unknown Company'}\n👥 **Audience:** ${audienceInfo}\n🎯 **Campaign:** ${campaign?.name || 'Unknown'}\n✉️ **Email Template:** ${template?.name || 'Unknown'}${operationInfo}`;
     } else {
       // Handle custom form submission with dynamic field generation
       const formFields = (thisFormState as any).options || [];
@@ -463,6 +492,7 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
     }
     
     await submitMessage({ text: message });
+    
     setChatBlocked(prev => ({
       ...prev,
       [conversationId || 'no-conv']: false
