@@ -114,10 +114,10 @@ const callTool = async (req, res) => {
   try {
     const appConfig = req.config;
     const { toolId = '' } = req.params;
-    
+
     // Check if this is an MCP tool (contains _mcp_ in the name)
     const isMCPTool = toolId.includes('_mcp_') || toolId.includes(Constants.mcp_delimiter);
-    
+
     // For non-MCP tools, check if they're in the fieldsMap
     if (!isMCPTool && !fieldsMap[toolId]) {
       logger.warn(`[${toolId}/call] User ${req.user.id} attempted call to invalid tool`);
@@ -126,7 +126,7 @@ const callTool = async (req, res) => {
     }
 
     const { partIndex, blockIndex, messageId, conversationId, ...args } = req.body;
-    
+
     // For MCP tools, messageId is optional (they can be called standalone)
     // For built-in tools, messageId is still required
     if (!isMCPTool && !messageId) {
@@ -144,9 +144,9 @@ const callTool = async (req, res) => {
         return;
       }
     }
-    
+
     logger.debug(`[${toolId}/call] User: ${req.user.id} | MCP Tool: ${isMCPTool}`);
-    
+
     let hasAccess = true;
     if (toolAccessPermType[toolId]) {
       hasAccess = await checkAccess({
