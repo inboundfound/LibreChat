@@ -344,12 +344,13 @@ const OutreachForm: React.FC<OutreachFormProps> = ({
         console.warn('⚠️ No result field in response');
       }
 
-      // Update form data with audience info for the onSubmit callback
-      const finalFormData: OutreachFormData = {
+      // Update form data with audience info and tool response for the onSubmit callback
+      const finalFormData: any = {
         ...formData,
         audience_type: audienceOption,
         selected_people: audienceOption === 'existing' ? selectedPeople.map(p => p.element_id) : undefined,
         manual_urls: audienceOption === 'manual' ? manualUrls : undefined,
+        toolResponse: data, // Include the tool response
       };
       
       // Call onSubmit after successful tool execution
