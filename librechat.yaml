@@ -234,61 +234,70 @@ mcpServers:
     timeout: 480000
     serverInstructions: |
       # IMPORTANT SYSTEM RULE
-       All tools on this server have a strict, low-level requirement: they only accept a single parameter named 'input' which MUST be a STRINGIFIED JSON object. You must construct the JSON object first, then convert it to a string before calling the tool.
+      All tools on this server have a strict, low-level requirement: they only accept a single parameter named 'input' which MUST be a STRINGIFIED JSON object. You must construct the JSON object first, then convert it to a string before calling the tool.
 
-       # AVAILABLE TOOLS
-       You have access to two distinct audit engines. You must choose the correct one based on the context of the user's request.
+      # AVAILABLE TOOLS
+      You have access to two distinct audit engines. You must choose the correct one based on the context of the user's request.
 
-       ---
+      ---
 
-       ### Tool 1: `run_if_content_audit` (General SEO Audit)
+      ### Tool 1: `run_if_content_audit` (General SEO Audit)
 
-       **Use this tool for a comprehensive, data-driven SEO audit of any public webpage.**
-       It synthesizes Google Search Console (GSC) data, competitive analysis, and on-page metrics to produce a full transformation plan. This is your default choice for general SEO analysis.
+      **Use this tool for a comprehensive, data-driven SEO audit of any public webpage.**
+      It synthesizes Google Search Console (GSC) data, competitive analysis, and on-page metrics to produce a full transformation plan. This is your default choice for general SEO analysis.
 
-       **Input Requirements:**
-       The stringified JSON for the 'input' parameter must contain:
-       - `address` (string): The full URL of the page to audit.
-       - `website_id` (string): A unique identifier for the website.
-       - `gsc_metrics` (object): The Google Search Console performance data for the page.
+      **Input Requirements:**
+      The stringified JSON for the 'input' parameter must contain:
+      - `address` (string): The full URL of the page to audit.
+      - `website_id` (string): A unique identifier for the website.
+      - `gsc_metrics` (object): The Google Search Console performance data for the page.
 
-       **Example Workflow:**
-       1.  **Create the object:**
-           {
-             "website_id": "123-abc-456",
-             "address": "https://example.com/your-page-to-audit",
-             "gsc_metrics": {
-               "clicks": 10,
-               "impressions": 1500,
-               "top_queries": [
-                 {"query": "primary keyword topic", "clicks": 5, "impressions": 800},
-                 {"query": "secondary keyword topic", "clicks": 2, "impressions": 400}
-               ]
-             }
-           }
-       2.  **Convert to a string and call the tool:**
-           run_if_content_audit(input: "{\"website_id\":\"123-abc-456\",\"address\":\"https://example.com/your-page-to-audit\",\"gsc_metrics\":{\"clicks\":10,\"impressions\":1500,\"top_queries\":[{\"query\":\"primary keyword topic\",\"clicks\":5,\"impressions\":800},{\"query\":\"secondary keyword topic\",\"clicks\":2,\"impressions\":400}]}}")
+      **Example Workflow:**
+      1.  **Create the object:**
+          {
+            "website_id": "123-abc-456",
+            "address": "https://example.com/your-page-to-audit",
+            "gsc_metrics": {
+              "clicks": 10,
+              "impressions": 1500,
+              "top_queries": [
+                {"query": "primary keyword topic", "clicks": 5, "impressions": 800},
+                {"query": "secondary keyword topic", "clicks": 2, "impressions": 400}
+              ]
+            }
+          }
+      2.  **Convert to a string and call the tool:**
+          run_if_content_audit(input: "{\"website_id\":\"123-abc-456\",\"address\":\"https://example.com/your-page-to-audit\",\"gsc_metrics\":{\"clicks\":10,\"impressions\":1500,\"top_queries\":[{\"query\":\"primary keyword topic\",\"clicks\":5,\"impressions\":800},{\"query\":\"secondary keyword topic\",\"clicks\":2,\"impressions\":400}]}}")
 
-       ---
+      ---
 
-       ### Tool 2: `run_chop_content_audit` (CHOP Foundation Strategic Audit)
+      ### Tool 2: `run_chop_content_audit` (CHOP Foundation Strategic Audit)
 
-       **Use this tool ONLY for CHOP Foundation pages to generate a strategic transformation plan.**
-       This engine focuses on aligning web content with donor journeys and the specific new sitemap structure. It analyzes the page's role in the donor experience and maps out its consolidation into a more effective content hub.
+      **Use this tool ONLY for CHOP Foundation pages to generate a strategic transformation plan.**
+      This engine focuses on aligning web content with donor journeys and the specific new sitemap structure by analyzing real user data from GSC. It maps out the page's consolidation into a more effective content hub.
 
-       **Input Requirements:**
-       The stringified JSON for the 'input' parameter must contain:
-       - `address` (string): The full URL of the CHOP Foundation page.
-       - `crawl_number` (string, optional): A number for tracking or context.
+      **Input Requirements:**
+      The stringified JSON for the 'input' parameter must contain:
+      - `address` (string): The full URL of the CHOP Foundation page.
+      - `gsc_metrics` (object): The Google Search Console performance data for the page.
+      - `crawl_number` (string, optional): A number for tracking or context.
 
-       **Example Workflow:**
-       1.  **Create the object:**
-           {
-             "crawl_number": "3",
-             "address": "https://www.chop.edu/giving/get-involved/planned-giving/will-or-living-trust"
-           }
-       2.  **Convert to a string and call the tool:**
-           run_chop_content_audit(input: "{\"crawl_number\":\"3\",\"address\":\"https://www.chop.edu/giving/get-involved/planned-giving/will-or-living-trust\"}")
+      **Example Workflow:**
+      1.  **Create the object:**
+          {
+            "crawl_number": "3",
+            "address": "https://www.chop.edu/giving/get-involved/planned-giving/will-or-living-trust",
+            "gsc_metrics": {
+              "clicks": 10,
+              "impressions": 1500,
+              "top_queries": [
+                {"query": "charitable gift annuity rates", "clicks": 5, "impressions": 800},
+                {"query": "how to leave a gift in will", "clicks": 2, "impressions": 400}
+              ]
+            }
+          }
+      2.  **Convert to a string and call the tool:**
+          run_chop_content_audit(input: "{\"crawl_number\":\"3\",\"address\":\"https://www.chop.edu/giving/get-involved/planned-giving/will-or-living-trust\",\"gsc_metrics\":{\"clicks\":10,\"impressions\":1500,\"top_queries\":[{\"query\":\"charitable gift annuity rates\",\"clicks\":5,\"impressions\":800},{\"query\":\"how to leave a gift in will\",\"clicks\":2,\"impressions\":400}]}}")
 
     #serverInstructions: |
     #  To use the 'create_gmail_draft' tool, you MUST provide a single JSON string for the 'input' parameter.
