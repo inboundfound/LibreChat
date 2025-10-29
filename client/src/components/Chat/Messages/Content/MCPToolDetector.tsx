@@ -76,45 +76,80 @@ const MCP_TOOL_CONFIGS = {
     formType: 'custom',
     extractOptions: (output: string) => {
       try {
-        // Parse the form fields string format: "label:value_type:|:label:value_type:|:..."
-        // Capture everything after "form_fields::" until the end of line or NOTE
-        const formFieldsMatch = output.match(/form_fields::(.+?)(?:\n|$)/);
-        if (!formFieldsMatch) {
-          console.log('No form fields found in output');
-          return [];
+        console.log('🔍 Parsing custom form output:', output);
+        console.log('🔍 Output type:', typeof output);
+        
+        // The output might be wrapped in an array with a text field, or plain text with NOTE
+        let parsedData;
+        let jsonString = output;
+        
+        try {
+          // First try to parse as JSON array (TextContent format)
+          const outputArray = JSON.parse(output);
+          console.log('🔍 Parsed as array:', Array.isArray(outputArray));
+          
+          if (Array.isArray(outputArray) && outputArray.length > 0 && outputArray[0].text) {
+            // Extract the text field and parse again
+            console.log('🔍 Extracting from text field');
+            jsonString = outputArray[0].text;
+          } else {
+            // It's already parsed JSON
+            parsedData = outputArray;
+          }
+        } catch {
+          // Not a JSON array, treat as plain text
+          console.log('🔍 Not a JSON array, parsing as plain text');
         }
-
-        const formFieldsString = formFieldsMatch[1];
-        console.log('Raw form fields string:', formFieldsString);
-        console.log('Full output for debugging:', output);
         
-        // Split by the new delimiter :|:
-        const fieldPairs = formFieldsString.split(':|:');
-        console.log('Field pairs:', fieldPairs);
-        console.log('Number of fields found:', fieldPairs.length);
-        
-        const options = fieldPairs.map(pair => {
-          const [label, valueType] = pair.split(':');
-          if (!label || !valueType) {
-            console.log('Invalid field pair:', pair);
-            return null;
+        // If we haven't parsed yet, extract JSON from plain text
+        if (!parsedData) {
+          // Remove NOTE section if present
+          const noteIndex = jsonString.indexOf('\n\nNOTE:');
+          if (noteIndex > 0) {
+            jsonString = jsonString.substring(0, noteIndex);
+            console.log('🔍 Removed NOTE section, JSON string:', jsonString);
           }
           
-          // Clean up any extra text or newlines from the value type
-          const cleanValueType = valueType.split('\n')[0].split('\\n')[0].replace(/\\n/g, '').trim();
-          
-          return {
-            label: label.trim(),
-            value: cleanValueType,
-            id: label.trim().toLowerCase().replace(/\s+/g, '_')
+          // Now try to parse the cleaned JSON string
+          parsedData = JSON.parse(jsonString.trim());
+        }
+        
+        console.log('🔍 Final parsed data:', parsedData);
+        
+        // Extract form fields
+        const formFields = (parsedData.form_fields || []).map((field: any) => {
+          const fieldData: any = {
+            label: field.label,
+            type: field.type,
+            id: field.label.toLowerCase().replace(/\s+/g, '_')
           };
-        }).filter(Boolean);
+          
+          // Add selector-specific properties
+          if (field.type === 'selector') {
+            fieldData.options = field.options || [];
+            if (field.default) {
+              fieldData.default = field.default;
+            }
+          }
+          
+          return fieldData;
+        });
 
-        console.log('Extracted form field options:', options);
-        return options;
+        console.log('✅ Extracted custom form fields:', formFields);
+        
+        return {
+          formFields,
+          requestId: parsedData.request_id,
+          functionToolName: parsedData.function_tool_name
+        };
       } catch (e) {
-        console.error('Failed to parse form field options:', e);
-        return [];
+        console.error('❌ Failed to parse custom form options:', e);
+        console.error('❌ Output was:', output);
+        return {
+          formFields: [],
+          requestId: null,
+          functionToolName: null
+        };
       }
     }
   },
@@ -308,7 +343,7 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
     const hasValidOptions = Array.isArray(options) 
       ? options.length > 0 
       : (options && typeof options === 'object' && Object.keys(options).length > 0 && 
-         // For object-based options (like outreach), check if at least one property has data
+         // For object-based options (like outreach and custom), check if at least one property has data
          Object.values(options).some((val: any) => 
            Array.isArray(val) ? val.length > 0 : !!val
          ));
@@ -467,14 +502,19 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
       message = `I have submitted the outreach campaign configuration:\n\n👤 **Sender:** ${sender?.name || 'Unknown'} (${sender?.occupation || 'No title'}) at ${sender?.company_name || 'Unknown Company'}\n👥 **Audience:** ${audienceInfo}\n🎯 **Campaign:** ${campaign?.name || 'Unknown'}\n✉️ **Email Template:** ${template?.name || 'Unknown'}${operationInfo}`;
     } else {
       // Handle custom form submission with dynamic field generation
-      const formFields = (thisFormState as any).options || [];
+      const formFields = (thisFormState as any).options?.formFields || [];
       const fieldDetails = formFields.map((field: any) => {
         const value = data[field.id];
         let displayValue = value;
         
         // Handle boolean values
-        if (field.value === 'bool') {
+        if (field.type === 'bool') {
           displayValue = value ? 'Yes' : 'No';
+        }
+        // Handle selector values - show the label instead of value
+        else if (field.type === 'selector' && field.options) {
+          const selectedOption = field.options.find((opt: any) => opt.value === value);
+          displayValue = selectedOption?.label || value;
         }
         // Handle date values if they exist
         else if (value && typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
@@ -573,7 +613,7 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
         <CustomForm
           onSubmit={handleFormSubmit}
           onCancel={handleFormCancel}
-          formFields={(thisFormState as any).options || []}
+          formFields={(thisFormState as any).options?.formFields || []}
           isSubmitted={thisFormState.isSubmitted}
           isCancelled={thisFormState.isCancelled}
           submittedData={thisFormState.submittedData}
