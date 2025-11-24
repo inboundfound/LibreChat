@@ -10,6 +10,7 @@ import { ScreenshotProvider, useApiErrorBoundary } from './hooks';
 import { getThemeFromEnv } from './utils/getThemeFromEnv';
 import { LiveAnnouncer } from '~/a11y';
 import { router } from './routes';
+import MarkerIOProvider from './Providers/MarkerIOProvider';
 
 const App = () => {
   const { setError } = useApiErrorBoundary();
@@ -60,6 +61,7 @@ const App = () => {
 
 export default () => (
   <ScreenshotProvider>
+    <MarkerIOProvider />
     <App />
     <iframe
       src="assets/silence.mp3"
