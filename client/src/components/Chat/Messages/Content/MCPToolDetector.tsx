@@ -143,6 +143,7 @@ const MCP_TOOL_CONFIGS = {
           formFields,
           requestId: parsedData.request_id,
           functionToolName: parsedData.function_tool_name,
+          submitInstructions: parsedData.submit_instructions || undefined,
         };
       } catch (e) {
         console.error('❌ Failed to parse custom form options:', e);
@@ -259,6 +260,84 @@ const MCP_TOOL_CONFIGS = {
           campaigns: [],
           templates: [],
           icps: [],
+        };
+      }
+    },
+  },
+  email_sme_questions_form: {
+    triggerForm: true,
+    formType: 'custom',
+    extractOptions: (output: string) => {
+      try {
+        console.log('🔍 Parsing email_sme_questions_form output:', output);
+        console.log('🔍 Output type:', typeof output);
+
+        // The output structure is: [{"type": "text", "text": "[{\"output\": \"```markdown...```\"}]"}]
+        let emailContent = '';
+
+        try {
+          // First parse the outer array
+          const outerArray = JSON.parse(output);
+          console.log('🔍 Parsed outer array:', outerArray);
+
+          if (Array.isArray(outerArray) && outerArray.length > 0 && outerArray[0].text) {
+            // Parse the inner text field which contains another JSON array
+            const innerArray = JSON.parse(outerArray[0].text);
+            console.log('🔍 Parsed inner array:', innerArray);
+
+            if (Array.isArray(innerArray) && innerArray.length > 0 && innerArray[0].output) {
+              // Extract the markdown content from the output field
+              emailContent = innerArray[0].output;
+
+              // Remove markdown code fence if present
+              emailContent = emailContent.replace(/^```markdown\n/, '').replace(/\n```$/, '');
+
+              console.log('🔍 Extracted email content:', emailContent.substring(0, 200));
+            }
+          }
+        } catch (parseError) {
+          console.error('❌ Failed to parse nested structure:', parseError);
+          // Fallback: try to extract markdown from the raw output
+          const markdownMatch = output.match(/```markdown\n([\s\S]+?)\n```/);
+          if (markdownMatch) {
+            emailContent = markdownMatch[1];
+            console.log('🔍 Extracted email content via regex fallback');
+          }
+        }
+
+        // Create form fields for the email content and recipient
+        const formFields = [
+          {
+            label: 'Recipient Email',
+            type: 'email',
+            id: 'recipient_email',
+            default: '',
+          },
+          {
+            label: 'Email Content',
+            type: 'textarea',
+            id: 'email_content',
+            default: emailContent,
+            rows: 15,
+          },
+        ];
+
+        console.log('✅ Extracted email_sme_questions_form fields:', formFields);
+
+        return {
+          formFields,
+          requestId: null,
+          functionToolName: 'email_sme_questions_form',
+          submitInstructions:
+            'After you submit this form, the brevo_send_email tool will be used to send the email content to the recipient you specified.',
+        };
+      } catch (_e) {
+        console.error('❌ Failed to parse email_sme_questions_form options:', _e);
+        console.error('❌ Output was:', output);
+        return {
+          formFields: [],
+          requestId: null,
+          functionToolName: null,
         };
       }
     },
@@ -603,9 +682,9 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
     return (
       <>
         {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
-          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 p-4 shadow-lg dark:bg-orange-900/20">
-            <div className="mb-4 flex items-center gap-2">
-              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
+          <div className="p-4 my-4 border border-orange-400 shadow-lg rounded-xl bg-orange-50 dark:bg-orange-900/20">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
               <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
                 Chat is disabled - Please complete the form below
               </span>
@@ -629,9 +708,9 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
     return (
       <>
         {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
-          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 p-4 shadow-lg dark:bg-orange-900/20">
-            <div className="mb-4 flex items-center gap-2">
-              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
+          <div className="p-4 my-4 border border-orange-400 shadow-lg rounded-xl bg-orange-50 dark:bg-orange-900/20">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
               <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
                 Chat is disabled - Please complete the form below
               </span>
@@ -646,6 +725,7 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
           isSubmitted={thisFormState.isSubmitted}
           isCancelled={thisFormState.isCancelled}
           submittedData={thisFormState.submittedData}
+          submitInstructions={(thisFormState as any).options?.submitInstructions}
         />
       </>
     );
@@ -656,9 +736,9 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
     return (
       <>
         {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
-          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 p-4 shadow-lg dark:bg-orange-900/20">
-            <div className="mb-4 flex items-center gap-2">
-              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
+          <div className="p-4 my-4 border border-orange-400 shadow-lg rounded-xl bg-orange-50 dark:bg-orange-900/20">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
               <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
                 Chat is disabled - Please complete the form below
               </span>

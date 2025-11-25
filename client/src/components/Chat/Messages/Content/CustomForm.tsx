@@ -4,10 +4,11 @@ import { Button, Input, Label, TextareaAutosize, SelectDropDown } from '@librech
 
 interface CustomFormField {
   label: string;
-  type: string; // 'text_field', 'bool', 'selector', etc.
+  type: string; // 'text_field', 'bool', 'selector', 'textarea', 'email', etc.
   id: string;
   options?: Array<{ label: string; value: string }>; // For selector type
-  default?: string; // Default value for selector
+  default?: string; // Default value for selector or textarea
+  rows?: number; // For textarea type
 }
 
 interface CustomFormData {
@@ -21,6 +22,7 @@ interface CustomFormProps {
   isSubmitted?: boolean;
   isCancelled?: boolean;
   submittedData?: CustomFormData;
+  submitInstructions?: string; // Optional instructions to display before submit
 }
 
 const CustomForm: React.FC<CustomFormProps> = ({
@@ -30,6 +32,7 @@ const CustomForm: React.FC<CustomFormProps> = ({
   isSubmitted = false,
   isCancelled = false,
   submittedData,
+  submitInstructions,
 }) => {
   const localize = useLocalize();
   const [formData, setFormData] = useState<CustomFormData>({});
@@ -41,7 +44,7 @@ const CustomForm: React.FC<CustomFormProps> = ({
     formFields.forEach((field) => {
       if (field.type === 'bool') {
         initialData[field.id] = false;
-      } else if (field.type === 'selector') {
+      } else if (field.type === 'selector' || field.type === 'textarea') {
         // Use default value if provided, otherwise empty string
         initialData[field.id] = field.default || '';
       } else {
@@ -99,10 +102,10 @@ const CustomForm: React.FC<CustomFormProps> = ({
   // If form is cancelled, show cancelled state
   if (isCancelled) {
     return (
-      <div className="my-4 rounded-xl border border-red-400 bg-red-50 p-4 shadow-lg dark:bg-red-900/20">
+      <div className="p-4 my-4 border border-red-400 shadow-lg rounded-xl bg-red-50 dark:bg-red-900/20">
         <div className="mb-4">
-          <div className="mb-2 flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-red-500"></div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
             <h3 className="text-lg font-semibold text-red-800 dark:text-red-200">
               ❌ Custom Form Cancelled
             </h3>
@@ -116,10 +119,10 @@ const CustomForm: React.FC<CustomFormProps> = ({
   // If form is submitted, show the form with disabled fields and green outline
   if (isSubmitted && submittedData) {
     return (
-      <div className="my-4 rounded-xl border-2 border-green-500 bg-gray-800 p-4 shadow-lg">
+      <div className="p-4 my-4 bg-gray-800 border-2 border-green-500 shadow-lg rounded-xl">
         <div className="mb-4">
-          <div className="mb-2 flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-green-500"></div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
             <h3 className="text-lg font-semibold text-green-400">✅ Custom Form Submitted</h3>
           </div>
           <p className="text-sm text-green-300">The form has been submitted and processed.</p>
@@ -130,7 +133,7 @@ const CustomForm: React.FC<CustomFormProps> = ({
             const value = submittedData[field.id];
             return (
               <div key={field.id}>
-                <Label htmlFor={field.id} className="mb-2 block text-sm font-medium text-white">
+                <Label htmlFor={field.id} className="block mb-2 text-sm font-medium text-white">
                   {field.label}
                 </Label>
 
@@ -142,7 +145,7 @@ const CustomForm: React.FC<CustomFormProps> = ({
                         name={field.id}
                         value="true"
                         checked={value === true}
-                        className="border-green-500 text-green-500"
+                        className="text-green-500 border-green-500"
                         disabled
                       />
                       <span className="text-white opacity-75">Yes</span>
@@ -153,7 +156,7 @@ const CustomForm: React.FC<CustomFormProps> = ({
                         name={field.id}
                         value="false"
                         checked={value === false}
-                        className="border-green-500 text-green-500"
+                        className="text-green-500 border-green-500"
                         disabled
                       />
                       <span className="text-white opacity-75">No</span>
@@ -164,7 +167,7 @@ const CustomForm: React.FC<CustomFormProps> = ({
                     <select
                       id={field.id}
                       value={String(value)}
-                      className="w-full rounded-md border border-green-500 bg-gray-700 px-3 py-2 text-white opacity-75"
+                      className="w-full px-3 py-2 text-white bg-gray-700 border border-green-500 rounded-md opacity-75"
                       disabled
                     >
                       {field.options?.map((option) => (
@@ -174,12 +177,20 @@ const CustomForm: React.FC<CustomFormProps> = ({
                       ))}
                     </select>
                   </div>
+                ) : field.type === 'textarea' ? (
+                  <TextareaAutosize
+                    id={field.id}
+                    value={String(value)}
+                    className="w-full px-3 py-2 text-white bg-gray-700 border border-green-500 rounded-md opacity-75"
+                    minRows={field.rows || 6}
+                    disabled
+                  />
                 ) : (
                   <Input
                     id={field.id}
-                    type="text"
+                    type={field.type === 'email' ? 'email' : 'text'}
                     value={String(value)}
-                    className="w-full border-green-500 bg-gray-700 text-white opacity-75"
+                    className="w-full text-white bg-gray-700 border-green-500 opacity-75"
                     disabled
                   />
                 )}
@@ -192,10 +203,10 @@ const CustomForm: React.FC<CustomFormProps> = ({
   }
 
   return (
-    <div className="my-4 rounded-xl border border-gray-600 bg-gray-800 p-4 shadow-lg">
+    <div className="p-4 my-4 bg-gray-800 border border-gray-600 shadow-lg rounded-xl">
       <div className="mb-4">
-        <div className="mb-2 flex items-center gap-2">
-          <div className="h-3 w-3 animate-pulse rounded-full bg-blue-500"></div>
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
           <h3 className="text-lg font-semibold text-white">Custom Form</h3>
         </div>
         <p className="text-sm text-gray-300">
@@ -207,7 +218,7 @@ const CustomForm: React.FC<CustomFormProps> = ({
       <form onSubmit={handleSubmit} className="space-y-6">
         {formFields.map((field) => (
           <div key={field.id}>
-            <Label htmlFor={field.id} className="mb-2 block text-sm font-medium text-white">
+            <Label htmlFor={field.id} className="block mb-2 text-sm font-medium text-white">
               {field.label}
             </Label>
 
@@ -242,7 +253,7 @@ const CustomForm: React.FC<CustomFormProps> = ({
                   id={field.id}
                   value={(formData[field.id] as string) || ''}
                   onChange={(e) => handleInputChange(field.id, e.target.value)}
-                  className="w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-white placeholder-gray-400 bg-gray-700 border border-gray-600 rounded-md focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="" disabled>
@@ -255,19 +266,36 @@ const CustomForm: React.FC<CustomFormProps> = ({
                   ))}
                 </select>
               </div>
-            ) : (
-              <Input
+            ) : field.type === 'textarea' ? (
+              <TextareaAutosize
                 id={field.id}
-                type="text"
                 value={(formData[field.id] as string) || ''}
                 onChange={(e) => handleInputChange(field.id, e.target.value)}
                 placeholder={`Enter ${field.label.toLowerCase()}...`}
-                className="w-full border-gray-600 bg-gray-700 text-white placeholder-gray-400"
+                className="w-full px-3 py-2 text-white placeholder-gray-400 bg-gray-700 border border-gray-600 rounded-md focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                minRows={field.rows || 6}
+                required
+              />
+            ) : (
+              <Input
+                id={field.id}
+                type={field.type === 'email' ? 'email' : 'text'}
+                value={(formData[field.id] as string) || ''}
+                onChange={(e) => handleInputChange(field.id, e.target.value)}
+                placeholder={`Enter ${field.label.toLowerCase()}...`}
+                className="w-full text-white placeholder-gray-400 bg-gray-700 border-gray-600"
                 required
               />
             )}
           </div>
         ))}
+
+        {/* Optional Submit Instructions */}
+        {submitInstructions && (
+          <div className="p-3 border rounded-md border-blue-500/30 bg-blue-900/20">
+            <p className="text-sm text-blue-200">{submitInstructions}</p>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex gap-3 pt-2">
@@ -275,7 +303,7 @@ const CustomForm: React.FC<CustomFormProps> = ({
             type="button"
             onClick={handleCancel}
             variant="outline"
-            className="flex-1 border-gray-600 bg-transparent text-gray-300 hover:bg-gray-700"
+            className="flex-1 text-gray-300 bg-transparent border-gray-600 hover:bg-gray-700"
             disabled={isSubmitting}
           >
             Cancel
@@ -283,11 +311,11 @@ const CustomForm: React.FC<CustomFormProps> = ({
           <Button
             type="submit"
             disabled={!isValid || isSubmitting}
-            className="flex-1 bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-600"
+            className="flex-1 text-white bg-blue-600 hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-600"
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center gap-2">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                <div className="w-4 h-4 border-2 border-white rounded-full animate-spin border-t-transparent"></div>
                 Submitting...
               </span>
             ) : (
