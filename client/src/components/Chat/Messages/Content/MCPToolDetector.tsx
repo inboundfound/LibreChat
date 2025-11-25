@@ -682,9 +682,9 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
     return (
       <>
         {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
-          <div className="p-4 my-4 border border-orange-400 shadow-lg rounded-xl bg-orange-50 dark:bg-orange-900/20">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 p-4 shadow-lg dark:bg-orange-900/20">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
               <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
                 Chat is disabled - Please complete the form below
               </span>
@@ -708,9 +708,9 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
     return (
       <>
         {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
-          <div className="p-4 my-4 border border-orange-400 shadow-lg rounded-xl bg-orange-50 dark:bg-orange-900/20">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 p-4 shadow-lg dark:bg-orange-900/20">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
               <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
                 Chat is disabled - Please complete the form below
               </span>
@@ -736,9 +736,9 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
     return (
       <>
         {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
-          <div className="p-4 my-4 border border-orange-400 shadow-lg rounded-xl bg-orange-50 dark:bg-orange-900/20">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 p-4 shadow-lg dark:bg-orange-900/20">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
               <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
                 Chat is disabled - Please complete the form below
               </span>
