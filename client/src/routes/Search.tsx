@@ -1,12 +1,14 @@
 import { useEffect, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
+import { useForm } from 'react-hook-form';
 import { buildTree } from 'librechat-data-provider';
 import { Spinner, useToastContext } from '@librechat/client';
+import type { ChatFormValues } from '~/common';
 import MinimalMessagesWrapper from '~/components/Chat/Messages/MinimalMessages';
 import { useNavScrolling, useLocalize, useAuthContext } from '~/hooks';
 import SearchMessage from '~/components/Chat/Messages/SearchMessage';
 import { useMessagesInfiniteQuery } from '~/data-provider';
-import { useFileMapContext } from '~/Providers';
+import { useFileMapContext, ChatFormProvider } from '~/Providers';
 import store from '~/store';
 
 export default function Search() {
@@ -16,6 +18,10 @@ export default function Search() {
   const { isAuthenticated } = useAuthContext();
   const search = useRecoilValue(store.search);
   const searchQuery = search.debouncedQuery;
+
+  const methods = useForm<ChatFormValues>({
+    defaultValues: { text: '' },
+  });
 
   const {
     data: searchMessages,
@@ -69,26 +75,28 @@ export default function Search() {
   }
 
   return (
-    <MinimalMessagesWrapper ref={containerRef} className="relative flex h-full pt-4">
-      {(messages && messages.length === 0) || messages == null ? (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="rounded-lg bg-white p-6 text-lg text-gray-500 dark:border-gray-800/50 dark:bg-gray-800 dark:text-gray-300">
-            {localize('com_ui_nothing_found')}
-          </div>
-        </div>
-      ) : (
-        <>
-          {messages.map((msg) => (
-            <SearchMessage key={msg.messageId} message={msg} />
-          ))}
-          {isFetchingNextPage && (
-            <div className="flex justify-center py-4">
-              <Spinner className="text-text-primary" />
+    <ChatFormProvider {...methods}>
+      <MinimalMessagesWrapper ref={containerRef} className="relative flex h-full pt-4">
+        {(messages && messages.length === 0) || messages == null ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="p-6 text-lg text-gray-500 bg-white rounded-lg dark:border-gray-800/50 dark:bg-gray-800 dark:text-gray-300">
+              {localize('com_ui_nothing_found')}
             </div>
-          )}
-        </>
-      )}
-      <div className="absolute bottom-0 left-0 right-0 h-[5%] bg-gradient-to-t from-gray-50 to-transparent dark:from-gray-800" />
-    </MinimalMessagesWrapper>
+          </div>
+        ) : (
+          <>
+            {messages.map((msg) => (
+              <SearchMessage key={msg.messageId} message={msg} />
+            ))}
+            {isFetchingNextPage && (
+              <div className="flex justify-center py-4">
+                <Spinner className="text-text-primary" />
+              </div>
+            )}
+          </>
+        )}
+        <div className="absolute bottom-0 left-0 right-0 h-[5%] bg-gradient-to-t from-gray-50 to-transparent dark:from-gray-800" />
+      </MinimalMessagesWrapper>
+    </ChatFormProvider>
   );
 }
