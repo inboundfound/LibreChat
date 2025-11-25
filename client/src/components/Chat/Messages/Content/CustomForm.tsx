@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useLocalize } from '~/hooks';
-import { Button, Input, Label, TextareaAutosize, SelectDropDown } from '@librechat/client';
+import { Button, Input, Label, TextareaAutosize } from '@librechat/client';
 
 interface CustomFormField {
   label: string;
@@ -107,10 +107,12 @@ const CustomForm: React.FC<CustomFormProps> = ({
           <div className="mb-2 flex items-center gap-2">
             <div className="h-3 w-3 rounded-full bg-red-500"></div>
             <h3 className="text-lg font-semibold text-red-800 dark:text-red-200">
-              ❌ Custom Form Cancelled
+              {localize('com_ui_custom_form_cancelled')}
             </h3>
           </div>
-          <p className="text-sm text-red-700 dark:text-red-300">The custom form was cancelled.</p>
+          <p className="text-sm text-red-700 dark:text-red-300">
+            {localize('com_ui_custom_form_cancelled_description')}
+          </p>
         </div>
       </div>
     );
@@ -123,21 +125,22 @@ const CustomForm: React.FC<CustomFormProps> = ({
         <div className="mb-4">
           <div className="mb-2 flex items-center gap-2">
             <div className="h-3 w-3 rounded-full bg-green-500"></div>
-            <h3 className="text-lg font-semibold text-green-400">✅ Custom Form Submitted</h3>
+            <h3 className="text-lg font-semibold text-green-400">
+              {localize('com_ui_custom_form_submitted')}
+            </h3>
           </div>
-          <p className="text-sm text-green-300">The form has been submitted and processed.</p>
+          <p className="text-sm text-green-300">
+            {localize('com_ui_custom_form_submitted_description')}
+          </p>
         </div>
 
         <div className="space-y-6">
           {formFields.map((field) => {
             const value = submittedData[field.id];
-            return (
-              <div key={field.id}>
-                <Label htmlFor={field.id} className="mb-2 block text-sm font-medium text-white">
-                  {field.label}
-                </Label>
 
-                {field.type === 'bool' ? (
+            const renderSubmittedField = () => {
+              if (field.type === 'bool') {
+                return (
                   <div className="flex items-center gap-3">
                     <label className="flex items-center gap-2">
                       <input
@@ -148,7 +151,7 @@ const CustomForm: React.FC<CustomFormProps> = ({
                         className="border-green-500 text-green-500"
                         disabled
                       />
-                      <span className="text-white opacity-75">Yes</span>
+                      <span className="text-white opacity-75">{localize('com_ui_yes')}</span>
                     </label>
                     <label className="flex items-center gap-2">
                       <input
@@ -159,10 +162,14 @@ const CustomForm: React.FC<CustomFormProps> = ({
                         className="border-green-500 text-green-500"
                         disabled
                       />
-                      <span className="text-white opacity-75">No</span>
+                      <span className="text-white opacity-75">{localize('com_ui_no')}</span>
                     </label>
                   </div>
-                ) : field.type === 'selector' ? (
+                );
+              }
+
+              if (field.type === 'selector') {
+                return (
                   <div className="relative">
                     <select
                       id={field.id}
@@ -177,7 +184,11 @@ const CustomForm: React.FC<CustomFormProps> = ({
                       ))}
                     </select>
                   </div>
-                ) : field.type === 'textarea' ? (
+                );
+              }
+
+              if (field.type === 'textarea') {
+                return (
                   <TextareaAutosize
                     id={field.id}
                     value={String(value)}
@@ -185,15 +196,26 @@ const CustomForm: React.FC<CustomFormProps> = ({
                     minRows={field.rows || 6}
                     disabled
                   />
-                ) : (
-                  <Input
-                    id={field.id}
-                    type={field.type === 'email' ? 'email' : 'text'}
-                    value={String(value)}
-                    className="w-full border-green-500 bg-gray-700 text-white opacity-75"
-                    disabled
-                  />
-                )}
+                );
+              }
+
+              return (
+                <Input
+                  id={field.id}
+                  type={field.type === 'email' ? 'email' : 'text'}
+                  value={String(value)}
+                  className="w-full border-green-500 bg-gray-700 text-white opacity-75"
+                  disabled
+                />
+              );
+            };
+
+            return (
+              <div key={field.id}>
+                <Label htmlFor={field.id} className="mb-2 block text-sm font-medium text-white">
+                  {field.label}
+                </Label>
+                {renderSubmittedField()}
               </div>
             );
           })}
@@ -207,76 +229,81 @@ const CustomForm: React.FC<CustomFormProps> = ({
       <div className="mb-4">
         <div className="mb-2 flex items-center gap-2">
           <div className="h-3 w-3 animate-pulse rounded-full bg-blue-500"></div>
-          <h3 className="text-lg font-semibold text-white">Custom Form</h3>
+          <h3 className="text-lg font-semibold text-white">{localize('com_ui_custom_form')}</h3>
         </div>
-        <p className="text-sm text-gray-300">
-          Please fill out the form fields below. Chat is disabled until you submit or cancel this
-          form.
-        </p>
+        <p className="text-sm text-gray-300">{localize('com_ui_custom_form_description')}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {formFields.map((field) => (
-          <div key={field.id}>
-            <Label htmlFor={field.id} className="mb-2 block text-sm font-medium text-white">
-              {field.label}
-            </Label>
+        {formFields.map((field) => {
+          const renderField = () => {
+            if (field.type === 'bool') {
+              return (
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name={field.id}
+                      value="true"
+                      checked={formData[field.id] === true}
+                      onChange={() => handleInputChange(field.id, true)}
+                      className="text-blue-600"
+                    />
+                    <span className="text-white">{localize('com_ui_yes')}</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name={field.id}
+                      value="false"
+                      checked={formData[field.id] === false}
+                      onChange={() => handleInputChange(field.id, false)}
+                      className="text-blue-600"
+                    />
+                    <span className="text-white">{localize('com_ui_no')}</span>
+                  </label>
+                </div>
+              );
+            }
 
-            {field.type === 'bool' ? (
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name={field.id}
-                    value="true"
-                    checked={formData[field.id] === true}
-                    onChange={() => handleInputChange(field.id, true)}
-                    className="text-blue-600"
-                  />
-                  <span className="text-white">Yes</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name={field.id}
-                    value="false"
-                    checked={formData[field.id] === false}
-                    onChange={() => handleInputChange(field.id, false)}
-                    className="text-blue-600"
-                  />
-                  <span className="text-white">No</span>
-                </label>
-              </div>
-            ) : field.type === 'selector' ? (
-              <div className="relative">
-                <select
+            if (field.type === 'selector') {
+              return (
+                <div className="relative">
+                  <select
+                    id={field.id}
+                    value={(formData[field.id] as string) || ''}
+                    onChange={(e) => handleInputChange(field.id, e.target.value)}
+                    className="w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="" disabled>
+                      {localize('com_ui_select')} {field.label.toLowerCase()}...
+                    </option>
+                    {field.options?.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              );
+            }
+
+            if (field.type === 'textarea') {
+              return (
+                <TextareaAutosize
                   id={field.id}
                   value={(formData[field.id] as string) || ''}
                   onChange={(e) => handleInputChange(field.id, e.target.value)}
+                  placeholder={`Enter ${field.label.toLowerCase()}...`}
                   className="w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  minRows={field.rows || 6}
                   required
-                >
-                  <option value="" disabled>
-                    Select {field.label.toLowerCase()}...
-                  </option>
-                  {field.options?.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : field.type === 'textarea' ? (
-              <TextareaAutosize
-                id={field.id}
-                value={(formData[field.id] as string) || ''}
-                onChange={(e) => handleInputChange(field.id, e.target.value)}
-                placeholder={`Enter ${field.label.toLowerCase()}...`}
-                className="w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                minRows={field.rows || 6}
-                required
-              />
-            ) : (
+                />
+              );
+            }
+
+            return (
               <Input
                 id={field.id}
                 type={field.type === 'email' ? 'email' : 'text'}
@@ -286,9 +313,18 @@ const CustomForm: React.FC<CustomFormProps> = ({
                 className="w-full border-gray-600 bg-gray-700 text-white placeholder-gray-400"
                 required
               />
-            )}
-          </div>
-        ))}
+            );
+          };
+
+          return (
+            <div key={field.id}>
+              <Label htmlFor={field.id} className="mb-2 block text-sm font-medium text-white">
+                {field.label}
+              </Label>
+              {renderField()}
+            </div>
+          );
+        })}
 
         {/* Optional Submit Instructions */}
         {submitInstructions && (
@@ -306,7 +342,7 @@ const CustomForm: React.FC<CustomFormProps> = ({
             className="flex-1 border-gray-600 bg-transparent text-gray-300 hover:bg-gray-700"
             disabled={isSubmitting}
           >
-            Cancel
+            {localize('com_ui_cancel')}
           </Button>
           <Button
             type="submit"
@@ -316,10 +352,10 @@ const CustomForm: React.FC<CustomFormProps> = ({
             {isSubmitting ? (
               <span className="flex items-center justify-center gap-2">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                Submitting...
+                {localize('com_ui_submitting')}
               </span>
             ) : (
-              'Submit Form'
+              localize('com_ui_submit_form')
             )}
           </Button>
         </div>

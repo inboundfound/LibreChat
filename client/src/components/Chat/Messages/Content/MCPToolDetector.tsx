@@ -2,8 +2,8 @@ import React, { useEffect, useMemo } from 'react';
 import { Constants } from 'librechat-data-provider';
 import { useMessageContext } from '~/Providers';
 import { useRecoilState, useSetRecoilState } from 'recoil';
-import { crawlFormState, isChatBlockedState, submittedFormsState } from '~/store/crawlForm';
-import { useSubmitMessage } from '~/hooks';
+import { isChatBlockedState, submittedFormsState } from '~/store/crawlForm';
+import { useSubmitMessage, useLocalize } from '~/hooks';
 import CrawlForm from './CrawlForm';
 import CustomForm from './CustomForm';
 import OutreachForm from './OutreachForm';
@@ -350,6 +350,7 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
   const [submittedForms, setSubmittedForms] = useRecoilState(submittedFormsState);
   const setChatBlocked = useSetRecoilState(isChatBlockedState);
   const { submitMessage } = useSubmitMessage();
+  const localize = useLocalize();
 
   // Parse MCP tool name and server
   const { function_name, serverName, isMCPToolCall } = useMemo(() => {
@@ -686,7 +687,7 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
             <div className="mb-4 flex items-center gap-2">
               <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
               <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
-                Chat is disabled - Please complete the form below
+                {localize('com_ui_chat_disabled_complete_form')}
               </span>
             </div>
           </div>
@@ -712,7 +713,7 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
             <div className="mb-4 flex items-center gap-2">
               <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
               <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
-                Chat is disabled - Please complete the form below
+                {localize('com_ui_chat_disabled_complete_form')}
               </span>
             </div>
           </div>
@@ -740,7 +741,7 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
             <div className="mb-4 flex items-center gap-2">
               <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
               <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
-                Chat is disabled - Please complete the form below
+                {localize('com_ui_chat_disabled_complete_form')}
               </span>
             </div>
           </div>
