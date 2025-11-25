@@ -101,7 +101,16 @@ export default [
     },
 
     rules: {
-      'prettier/prettier': 'error',
+      'prettier/prettier': [
+        'error',
+        {},
+        {
+          usePrettierrc: true,
+          fileInfoOptions: {
+            withNodeModules: true,
+          },
+        },
+      ],
       'react/react-in-jsx-scope': 'off',
 
       '@typescript-eslint/ban-ts-comment': [
