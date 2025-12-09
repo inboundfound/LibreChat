@@ -20,6 +20,7 @@ const {
   generateToken,
   deleteUserById,
   generateRefreshToken,
+  updateExpiration,
 } = require('~/models');
 const { isEmailDomainAllowed } = require('~/server/services/domains');
 const { registerSchema } = require('~/strategies/validators');
@@ -368,6 +369,8 @@ const setAuthTokens = async (userId, res, sessionId = null) => {
 
     if (sessionId) {
       session = await findSession({ sessionId: sessionId }, { lean: false });
+      // Extend session expiration on user activity (sliding window)
+      session = await updateExpiration(session);
       refreshTokenExpires = session.expiration.getTime();
       refreshToken = await generateRefreshToken(session);
     } else {
