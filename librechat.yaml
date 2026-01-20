@@ -83,6 +83,7 @@ registration:
   socialLogins: ['github', 'google', 'discord', 'openid', 'facebook', 'apple', 'saml']
   allowedDomains:
     - 'inboundfound.com'
+    - 'citationlabs.com'
 
 # Example Balance settings
 # balance:
@@ -187,36 +188,53 @@ mcpServers:
       - execute_template: Run predefined query templates.
       - list_connections: Show available databases.
     timeout: 120000
-  draftOrSendEmail:
+  dataforseo:
     type: sse
-    url: https://inboundfound.app.n8n.cloud/mcp/create-gmail-email/sse
-    timeout: 30000
+    url: 'http://host.docker.internal:3000/sse'
+    name: 'DataForSEO'
+    description: 'DataForSEO MCP server for SERP, keywords, on-page, labs, backlinks, business data, domain analytics, and content analysis'
+    timeout: 180000
     serverInstructions: |
-      # IMPORTANT SYSTEM RULE
-      The tool 'create_gmail_email' has a strict, low-level requirement: it only accepts a single parameter named 'input' which MUST be a STRING.
-
       # CONTEXT & QUALITY STANDARD
-      You are an email assistant that creates professional emails and has the ability to create a draft or send the emails immediately. The emails you generate are REAL and get sent to real people. Your output must be a final, high-quality work product without any placeholders like 'Best, [Your Name]'.
+      You retrieve real SEO intelligence from DataForSEO APIs. Keep responses concise, actionable, and tie insights to the user's provided targets.
 
-      # SIGN-OFF RULE
-      When creating the 'compose' text, end the email body with a friendly closing of "Best," followed by the user's first name on a new line. User's first name is their username (typically shown as username: {{LIBRECHAT_USER_NAME}} ) BUT do not literally send emails signed with variables like `{{LIBRECHAT_USER_NAME}}`. If for any reason you are unsure of the user's first name, DO NOT add any sign-off at all.
+      # AVAILABLE MODULES
+      SERP, KEYWORDS_DATA, ONPAGE, DATAFORSEO_LABS, BACKLINKS, BUSINESS_DATA, DOMAIN_ANALYTICS, CONTENT_ANALYSIS.
 
-      # YOUR TASK
-      To use this tool, you must first create a standard JSON object containing the email details ('to', 'subject', 'compose', 'draft_or_send').
-      Then, you MUST convert that entire JSON object into a single line of text (a string).
-      Finally, you must call the tool, passing that single string as the value for the 'input' parameter.
+      # GUIDANCE
+      - Confirm required inputs (keywords, locations, language, URLs) before calling tools.
+      - Use focused calls instead of broad crawls to control latency and quota.
+      - Surface source metrics (volumes, ranks, costs) when available instead of generalities.
+  # draftOrSendEmail:
+  #   type: sse
+  #   url: https://inboundfound.app.n8n.cloud/mcp/create-gmail-email/sse
+  #   timeout: 30000
+  #   serverInstructions: |
+  #     # IMPORTANT SYSTEM RULE
+  #     The tool 'create_gmail_email' has a strict, low-level requirement: it only accepts a single parameter named 'input' which MUST be a STRING.
 
-      # EXAMPLE
-      ## Step 1: Create the object
-      {
-        "to": "test@example.com",
-        "subject": "My Subject",
-        "compose": "The body of my email.",
-        "draft_or_send": "draft"
-      }
+  #     # CONTEXT & QUALITY STANDARD
+  #     You are an email assistant that creates professional emails and has the ability to create a draft or send the emails immediately. The emails you generate are REAL and get sent to real people. Your output must be a final, high-quality work product without any placeholders like 'Best, [Your Name]'.
 
-      ## Step 2: Convert the object to a string and call the tool
-      create_gmail_draft(input: "{\"to\":\"test@example.com\",\"subject\":\"My Subject\",\"compose\":\"The body of my email.\",\"draft_or_send\":\"draft\"}")
+  #     # SIGN-OFF RULE
+  #     When creating the 'compose' text, end the email body with a friendly closing of "Best," followed by the user's first name on a new line. User's first name is their username (typically shown as username: {{LIBRECHAT_USER_NAME}} ) BUT do not literally send emails signed with variables like `{{LIBRECHAT_USER_NAME}}`. If for any reason you are unsure of the user's first name, DO NOT add any sign-off at all.
+
+  #     # YOUR TASK
+  #     To use this tool, you must first create a standard JSON object containing the email details ('to', 'subject', 'compose', 'draft_or_send').
+  #     Then, you MUST convert that entire JSON object into a single line of text (a string).
+  #     Finally, you must call the tool, passing that single string as the value for the 'input' parameter.
+
+  #     # EXAMPLE
+  #     ## Step 1: Create the object
+  #     {
+  #       "to": "test@example.com",
+  #       "subject": "My Subject",
+  #       "compose": "The body of my email.",
+  #       "draft_or_send": "draft"
+  #     }
+
+  #     ## Step 2: Convert the object to a string and call the tool
+  #     create_gmail_draft(input: "{\"to\":\"test@example.com\",\"subject\":\"My Subject\",\"compose\":\"The body of my email.\",\"draft_or_send\":\"draft\"}")
   if-core-app-mcp:
     type: sse
     url: 'http://host.docker.internal:15532/sse'
@@ -227,7 +245,7 @@ mcpServers:
       Authorization: '{{Authorization}}'
   content-audit:
     type: sse
-    url: 'https://inboundfound.app.n8n.cloud/mcp/run-if-content-audit'
+    url: 'https://inboundfound.app.n8n.cloud/mcp/run-cl-content-audit'
     customJWTAuth: 'ubAuthToken'
     headers:
       Authorization: '{{Authorization}}'
@@ -243,7 +261,7 @@ mcpServers:
 
       ---
 
-      ### Tool 1: `run_if_content_audit` (General SEO Audit)
+      ### Tool 1: `run_cl_content_audit` (General SEO Audit)
 
       **Use this tool for a comprehensive, data-driven SEO audit of any public webpage.**
       It synthesizes Google Search Console (GSC) data, competitive analysis, and on-page metrics to produce a full transformation plan. This is your default choice for general SEO analysis.
