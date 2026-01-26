@@ -2,6 +2,7 @@ import React, { memo, useMemo, useRef, useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 import { useToastContext } from '@librechat/client';
 import { PermissionTypes, Permissions, dataService } from 'librechat-data-provider';
+import MermaidPreview from '~/components/Messages/Content/MermaidPreview';
 import CodeBlock from '~/components/Messages/Content/CodeBlock';
 import useHasAccess from '~/hooks/Roles/useHasAccess';
 import { useFileDownload } from '~/data-provider';
@@ -35,6 +36,8 @@ export const code: React.ElementType = memo(({ className, children }: TCodeProps
 
   if (isMath) {
     return <>{children}</>;
+  } else if (lang === 'mermaid' && typeof children === 'string') {
+    return <MermaidPreview code={children} />;
   } else if (isSingleLine) {
     return (
       <code onDoubleClick={handleDoubleClick} className={className}>
@@ -59,6 +62,8 @@ export const codeNoExecution: React.ElementType = memo(({ className, children }:
 
   if (lang === 'math') {
     return children;
+  } else if (lang === 'mermaid' && typeof children === 'string') {
+    return <MermaidPreview code={children} />;
   } else if (typeof children === 'string' && children.split('\n').length === 1) {
     return (
       <code onDoubleClick={handleDoubleClick} className={className}>
