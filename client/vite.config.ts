@@ -48,7 +48,7 @@ export default defineConfig(({ command }) => ({
           'manifest.webmanifest',
         ],
         globIgnores: ['images/**/*', '**/*.map', 'index.html'],
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         navigateFallbackDenylist: [/^\/oauth/, /^\/api/],
       },
       includeAssets: [],
@@ -97,7 +97,7 @@ export default defineConfig(({ command }) => ({
   build: {
     sourcemap: process.env.NODE_ENV === 'development',
     outDir: './dist',
-    minify: 'terser',
+    minify: 'esbuild',
     rollupOptions: {
       preserveEntrySignatures: 'strict',
       output: {
@@ -113,9 +113,6 @@ export default defineConfig(({ command }) => ({
             }
             if (normalizedId.includes('i18next') || normalizedId.includes('react-i18next')) {
               return 'i18n';
-            }
-            if (normalizedId.includes('lodash')) {
-              return 'utilities';
             }
             if (normalizedId.includes('date-fns')) {
               return 'date-utils';
@@ -139,6 +136,9 @@ export default defineConfig(({ command }) => ({
               return 'security-ui';
             }
 
+            if (normalizedId.includes('mermaid')) {
+              return 'mermaid';
+            }
             if (normalizedId.includes('@codemirror/view')) {
               return 'codemirror-view';
             }
