@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useId, useCallback } from 'react';
-import mermaid from 'mermaid';
 import copy from 'copy-to-clipboard';
 import { Clipboard, CheckMark } from '@librechat/client';
 import { ChevronDown, ChevronUp, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
@@ -10,13 +9,26 @@ type MermaidPreviewProps = {
   code: string;
 };
 
-// Initialize mermaid with neutral theme for better text visibility
-mermaid.initialize({
-  startOnLoad: false,
-  theme: 'neutral',
-  securityLevel: 'loose',
-  fontFamily: 'inherit',
-});
+// Lazy load mermaid to avoid bundling issues with codemirror
+let mermaidInstance: typeof import('mermaid').default | null = null;
+let mermaidInitialized = false;
+
+const getMermaid = async () => {
+  if (!mermaidInstance) {
+    const mermaidModule = await import('mermaid');
+    mermaidInstance = mermaidModule.default;
+  }
+  if (!mermaidInitialized) {
+    mermaidInstance.initialize({
+      startOnLoad: false,
+      theme: 'neutral',
+      securityLevel: 'loose',
+      fontFamily: 'inherit',
+    });
+    mermaidInitialized = true;
+  }
+  return mermaidInstance;
+};
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 3;
@@ -24,36 +36,58 @@ const ZOOM_STEP = 0.25;
 
 /**
  * Preprocesses mermaid code to handle special characters in node labels.
- * Wraps unquoted node text containing special characters in quotes.
+ * Escapes problematic characters that conflict with mermaid syntax.
  */
 const preprocessMermaidCode = (code: string): string => {
-  // Pattern to match node definitions with brackets: NODE_ID[text] or NODE_ID(text) etc.
-  // We need to quote text that contains special characters like : ' & "
   const lines = code.split('\n');
 
   return lines
     .map((line) => {
-      // Skip comment lines
-      if (line.trim().startsWith('%%')) return line;
+      // Skip comment lines and style lines
+      if (line.trim().startsWith('%%') || line.trim().startsWith('style ')) return line;
 
-      // Match node definitions with various bracket types: [], (), {}, (())
-      // and wrap their content in quotes if it contains special characters
-      return line.replace(
-        /([\w]+)(\[|\(|\{|\(\()([^\])}]+)(\]|\)|\}|\)\))/g,
-        (match, nodeId, openBracket, content, closeBracket) => {
-          // Check if content already has quotes
-          if (content.startsWith('"') && content.endsWith('"')) {
-            return match;
+      // Find node definitions with square brackets: NODE_ID[content]
+      // Use a function to properly find matching brackets
+      let result = '';
+      let i = 0;
+
+      while (i < line.length) {
+        // Look for pattern: word followed by [
+        const match = line.slice(i).match(/^([\w]+)\[/);
+        if (match) {
+          const nodeId = match[1];
+          const startBracket = i + nodeId.length;
+
+          // Find the matching closing bracket
+          let depth = 1;
+          let j = startBracket + 1;
+          while (j < line.length && depth > 0) {
+            if (line[j] === '[') depth++;
+            else if (line[j] === ']') depth--;
+            j++;
           }
-          // Check if content contains special characters that need quoting
-          if (/[:'"|&]/.test(content)) {
-            // Escape any existing quotes in the content
-            const escapedContent = content.replace(/"/g, '#quot;');
-            return `${nodeId}${openBracket}"${escapedContent}"${closeBracket}`;
+
+          if (depth === 0) {
+            const content = line.slice(startBracket + 1, j - 1);
+
+            // Check if content needs escaping (contains special chars)
+            if (/[<>()"']/.test(content) && !content.startsWith('"')) {
+              // Escape only double quotes using mermaid's native escape syntax
+              // Parentheses are safe inside quoted strings
+              const escaped = content.replace(/"/g, '#quot;');
+              result += `${nodeId}["${escaped}"]`;
+            } else {
+              result += line.slice(i, j);
+            }
+            i = j;
+            continue;
           }
-          return match;
-        },
-      );
+        }
+        result += line[i];
+        i++;
+      }
+
+      return result;
     })
     .join('\n');
 };
@@ -88,6 +122,7 @@ const MermaidPreview: React.FC<MermaidPreviewProps> = ({ code }) => {
         const cleanId = `mermaid-${uniqueId.replace(/:/g, '-')}`;
 
         const processedCode = preprocessMermaidCode(code.trim());
+        const mermaid = await getMermaid();
         const { svg: renderedSvg } = await mermaid.render(cleanId, processedCode);
         setSvg(renderedSvg);
       } catch (err) {
