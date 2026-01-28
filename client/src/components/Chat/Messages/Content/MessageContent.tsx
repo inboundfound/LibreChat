@@ -80,44 +80,6 @@ export const ErrorMessage = ({
 }: Pick<TDisplayProps, 'text' | 'className'> & { message?: TMessage }) => {
   if (text === ERROR_CONNECTION_TEXT) {
     return <ConnectionError message={message} />;
-export const ErrorMessage = ({
-  text,
-  message,
-  className = '',
-}: Pick<TDisplayProps, 'text' | 'className'> & {
-  message?: TMessage;
-}) => {
-  const localize = useLocalize();
-  if (text === 'Error connecting to server, try refreshing the page.') {
-    console.log('error message', message);
-    return (
-      <Suspense
-        fallback={
-          <div className="text-message mb-[0.625rem] flex min-h-[20px] flex-col items-start gap-3 overflow-visible">
-            <div className="w-full prose break-words markdown dark:prose-invert light dark:text-gray-100">
-              <div className="absolute">
-                <p className="relative submitting">
-                  <span className="result-thinking" />
-                </p>
-              </div>
-            </div>
-          </div>
-        }
-      >
-        <DelayedRender delay={5500}>
-          <Container message={message}>
-            <div
-              className={cn(
-                'rounded-md border border-red-500 bg-red-500/10 px-3 py-2 text-sm text-gray-600 dark:text-gray-200',
-                className,
-              )}
-            >
-              {localize('com_ui_error_connection')}
-            </div>
-          </Container>
-        </DelayedRender>
-      </Suspense>
-    );
   }
 
   return (
@@ -223,4 +185,4 @@ const MessageContent = ({
   );
 };
 
-export default memo(MessageContent);
+export default memo(MessageContent);    
