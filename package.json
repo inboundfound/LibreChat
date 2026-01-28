@@ -152,5 +152,8 @@
       "admin/",
       "packages/"
     ]
+  },
+  "dependencies": {
+    "@marker.io/browser": "^0.20.2"
   }
 }

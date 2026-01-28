@@ -83,6 +83,7 @@ registration:
   socialLogins: ['github', 'google', 'discord', 'openid', 'facebook', 'apple', 'saml']
   allowedDomains:
     - 'inboundfound.com'
+    - 'crresearch.com'
 
 # Example Balance settings
 # balance:

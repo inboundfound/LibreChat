@@ -36,7 +36,6 @@ services:
       - ./logs:/app/api/logs
     networks:
       - default
-      - neo4j-mcp-server_mcp-network
 
   client:
     image: nginx:1.27.0-alpine
@@ -95,7 +94,3 @@ services:
 
 volumes:
   pgdata2:
-
-networks:
-  neo4j-mcp-server_mcp-network:
-    external: true
