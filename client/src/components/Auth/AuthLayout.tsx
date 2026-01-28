@@ -69,7 +69,7 @@ function AuthLayout({
           />
           <img
             src="assets/logo.svg"
-            className="h-full w-full object-contain hidden dark:block"
+            className="hidden h-full w-full object-contain dark:block"
             alt={localize('com_ui_logo', { 0: startupConfig?.appTitle ?? 'LibreChat' })}
             loading="eager"
           />
