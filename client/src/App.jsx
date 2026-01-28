@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { RecoilRoot } from 'recoil';
 import { DndProvider } from 'react-dnd';
 import { RouterProvider } from 'react-router-dom';
@@ -7,7 +8,9 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toast, ThemeProvider, ToastProvider } from '@librechat/client';
 import { QueryClient, QueryClientProvider, QueryCache } from '@tanstack/react-query';
 import { ScreenshotProvider, useApiErrorBoundary } from './hooks';
+import WakeLockManager from '~/components/System/WakeLockManager';
 import { getThemeFromEnv } from './utils/getThemeFromEnv';
+import { initializeFontSize } from '~/store/fontSize';
 import { LiveAnnouncer } from '~/a11y';
 import { router } from './routes';
 import MarkerIOProvider from './Providers/MarkerIOProvider';
@@ -16,6 +19,16 @@ const App = () => {
   const { setError } = useApiErrorBoundary();
 
   const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        // Always attempt network requests, even when navigator.onLine is false
+        // This is needed because localhost is reachable without WiFi
+        networkMode: 'always',
+      },
+      mutations: {
+        networkMode: 'always',
+      },
+    },
     queryCache: new QueryCache({
       onError: (error) => {
         if (error?.response?.status === 401) {
@@ -24,6 +37,10 @@ const App = () => {
       },
     }),
   });
+
+  useEffect(() => {
+    initializeFontSize();
+  }, []);
 
   // Load theme from environment variables if available
   const envTheme = getThemeFromEnv();
@@ -46,6 +63,7 @@ const App = () => {
               <ToastProvider>
                 <DndProvider backend={HTML5Backend}>
                   <RouterProvider router={router} />
+                  <WakeLockManager />
                   <ReactQueryDevtools initialIsOpen={false} position="top-right" />
                   <Toast />
                   <RadixToast.Viewport className="pointer-events-none fixed inset-0 z-[1000] mx-auto my-2 flex max-w-[560px] flex-col items-stretch justify-start md:pb-5" />
