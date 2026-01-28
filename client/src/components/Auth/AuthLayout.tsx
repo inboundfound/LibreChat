@@ -62,9 +62,16 @@ function AuthLayout({
       <BlinkAnimation active={isFetching}>
         <div className="mt-6 h-10 w-full bg-cover">
           <img
-            src="assets/logo.svg"
-            className="h-full w-full object-contain"
+            src="assets/logo-light-mode.svg"
+            className="h-full w-full object-contain dark:hidden"
             alt={localize('com_ui_logo', { 0: startupConfig?.appTitle ?? 'LibreChat' })}
+            loading="eager"
+          />
+          <img
+            src="assets/logo.svg"
+            className="h-full w-full object-contain hidden dark:block"
+            alt={localize('com_ui_logo', { 0: startupConfig?.appTitle ?? 'LibreChat' })}
+            loading="eager"
           />
         </div>
       </BlinkAnimation>
