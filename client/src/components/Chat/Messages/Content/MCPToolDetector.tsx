@@ -7,6 +7,8 @@ import { useSubmitMessage, useLocalize } from '~/hooks';
 import CrawlForm from './CrawlForm';
 import CustomForm from './CustomForm';
 import OutreachForm from './OutreachForm';
+import SiteKeywordForm from './SiteKeywordForm';
+import KeywordClusterForm from './KeywordClusterForm';
 
 interface MCPToolDetectorProps {
   toolCall: any; // Tool call data
@@ -342,6 +344,110 @@ const MCP_TOOL_CONFIGS = {
       }
     },
   },
+  render_load_site_keyword_data_form: {
+    triggerForm: true,
+    formType: 'site_keyword',
+    extractOptions: (output: string) => {
+      try {
+        console.log('🔍 Parsing site keyword form output:', output);
+        console.log('🔍 Output type:', typeof output);
+
+        let parsedData;
+        try {
+          // First try to parse as JSON array (TextContent format)
+          const outputArray = JSON.parse(output);
+          console.log('🔍 Parsed as array:', Array.isArray(outputArray));
+
+          if (Array.isArray(outputArray) && outputArray.length > 0 && outputArray[0].text) {
+            // Extract the text field and parse again
+            console.log('🔍 Extracting from text field');
+            parsedData = JSON.parse(outputArray[0].text);
+          } else {
+            parsedData = outputArray;
+          }
+        } catch {
+          // If that fails, try parsing directly
+          console.log('🔍 Parsing directly');
+          parsedData = JSON.parse(output);
+        }
+
+        console.log('🔍 Final parsed data:', parsedData);
+
+        // Extract service accounts
+        const serviceAccounts = (parsedData.service_accounts_list || []).map((sa: any) => ({
+          id: sa.id,
+          email: sa.email,
+        }));
+
+        // Extract websites
+        const websites = (parsedData.websites_list || []).map((ws: any) => ({
+          id: ws.id,
+          name: ws.name,
+          url: ws.url,
+        }));
+
+        // Extract keyword sources
+        const keywordSources = parsedData.keywords_sources_list || ['gsc', 'dataforseo'];
+
+        console.log('✅ Extracted site keyword options:', {
+          serviceAccounts: serviceAccounts.length,
+          websites: websites.length,
+          keywordSources,
+        });
+
+        return {
+          serviceAccounts,
+          websites,
+          keywordSources,
+        };
+      } catch (e) {
+        console.error('❌ Failed to parse site keyword form options:', e);
+        console.error('❌ Output was:', output);
+        return {
+          serviceAccounts: [],
+          websites: [],
+          keywordSources: [],
+        };
+      }
+    },
+  },
+  render_load_keyword_cluster_form: {
+    triggerForm: true,
+    formType: 'keyword_cluster',
+    extractOptions: (output: string) => {
+      try {
+        console.log('🔍 Parsing keyword cluster form output:', output);
+        
+        let parsedData;
+        try {
+          const outputArray = JSON.parse(output);
+          if (Array.isArray(outputArray) && outputArray.length > 0 && outputArray[0].text) {
+            parsedData = JSON.parse(outputArray[0].text);
+          } else {
+            parsedData = outputArray;
+          }
+        } catch {
+          parsedData = JSON.parse(output);
+        }
+        
+        const websites = (parsedData.websites_list || []).map((ws: any) => ({
+          id: ws.id,
+          name: ws.name,
+          url: ws.url,
+        }));
+        
+        console.log('✅ Extracted keyword cluster options:', {
+          websites: websites.length,
+        });
+        
+        return { websites };
+      } catch (e) {
+        console.error('❌ Failed to parse keyword cluster form options:', e);
+        console.error('❌ Output was:', output);
+        return { websites: [] };
+      }
+    },
+  },
   // Add more MCP tool configurations here
 };
 
@@ -595,6 +701,113 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
             : `Manual LinkedIn URLs`;
 
         message = `I have submitted the outreach campaign configuration:\n\n👤 **Sender:** ${sender?.name || 'Unknown'} (${sender?.occupation || 'No title'}) at ${sender?.company_name || 'Unknown Company'}\n👥 **Audience:** ${audienceInfo}\n🎯 **Campaign:** ${campaign?.name || 'Unknown'}\n✉️ **Email Template:** ${template?.name || 'Unknown'}${operationInfo}`;
+      } else if (toolConfig?.formType === 'site_keyword') {
+        // Handle site keyword form submission with tool response
+        const sourceLabel = data.keywords_source === 'gsc' ? 'Google Search Console' : 'DataForSEO';
+        const website = (thisFormState as any).options?.websites?.find((w: any) => w.id === data.website_id);
+        const websiteLabel = website ? `${website.name} (${website.url})` : data.website_id;
+        
+        let dateInfo = '';
+        let serviceAccountInfo = '';
+        if (data.keywords_source === 'gsc') {
+          if (data.start_date && data.end_date) {
+            dateInfo = `\n📅 **Date Range:** ${data.start_date} to ${data.end_date}`;
+          }
+          if (data.service_account) {
+            const serviceAccount = (thisFormState as any).options?.serviceAccounts?.find((sa: any) => sa.id === data.service_account);
+            const serviceAccountLabel = serviceAccount ? serviceAccount.email : data.service_account;
+            serviceAccountInfo = `\n🔑 **Service Account:** ${serviceAccountLabel}`;
+          }
+        }
+        
+        let resultInfo = '';
+        if (data.toolResponse?.result) {
+          // Parse and display result summary
+          try {
+            const resultString = typeof data.toolResponse.result === 'string' 
+              ? data.toolResponse.result 
+              : JSON.stringify(data.toolResponse.result);
+            
+            // Check if the result indicates success
+            const isSuccess = resultString.includes('successfully') || 
+                            resultString.includes('created') ||
+                            resultString.includes('if_lg');
+            
+            if (isSuccess) {
+              resultInfo = `\n\n✅ **Status:** Operation created successfully`;
+              
+              // Try to extract operation ID
+              const idMatch = resultString.match(/'id':\s*'([a-f0-9-]+)'/);
+              if (idMatch) {
+                resultInfo += `\n📋 **Operation ID:** ${idMatch[1]}`;
+              }
+              
+              // Try to extract description
+              const descMatch = resultString.match(/'descriptions':\s*'([^']+)'/);
+              if (descMatch) {
+                resultInfo += `\n📝 **Description:** ${descMatch[1]}`;
+              }
+            } else if (resultString.includes('error') || resultString.includes('Error') || resultString.includes('failed')) {
+              resultInfo = `\n\n❌ **Status:** Failed\n⚠️ **Error:** ${resultString}`;
+            } else {
+              resultInfo = `\n\n✅ **Status:** Request completed\n📄 **Response:** ${resultString.substring(0, 200)}`;
+            }
+          } catch (parseError) {
+            resultInfo = `\n\n✅ **Status:** Request completed\n📄 **Response:** ${String(data.toolResponse.result).substring(0, 200)}`;
+          }
+        }
+        
+        message = `I have loaded site keyword data with the following configuration:\n\n🔍 **Source:** ${sourceLabel}\n🌐 **Website:** ${websiteLabel}${serviceAccountInfo}${dateInfo}${resultInfo}`;
+      } else if (toolConfig?.formType === 'keyword_cluster') {
+        // Handle keyword cluster form submission with tool response
+        const website = (thisFormState as any).options?.websites?.find((w: any) => w.id === data.website_id);
+        const websiteLabel = website ? `${website.name} (${website.url})` : data.website_id;
+        
+        let urlInfo = '';
+        if (data.url_data && Array.isArray(data.url_data) && data.url_data.length > 0) {
+          urlInfo = `\n📄 **URL Scope:** ${data.url_data.length} specific URL(s)`;
+        } else {
+          urlInfo = `\n📄 **URL Scope:** All keywords on website`;
+        }
+        
+        let resultInfo = '';
+        if (data.toolResponse?.result) {
+          try {
+            const resultString = typeof data.toolResponse.result === 'string' 
+              ? data.toolResponse.result 
+              : JSON.stringify(data.toolResponse.result);
+            
+            const isSuccess = resultString.includes('successfully') || 
+                            resultString.includes('created') ||
+                            resultString.includes('cluster');
+            
+            if (isSuccess) {
+              resultInfo = `\n\n✅ **Status:** Clustering operation created successfully`;
+              
+              // Try to extract operation ID
+              const idMatch = resultString.match(/'id':\s*'([a-f0-9-]+)'/);
+              if (idMatch) {
+                resultInfo += `\n📋 **Operation ID:** ${idMatch[1]}`;
+              }
+              
+              // Try to extract cluster count if available
+              const clusterMatch = resultString.match(/(\d+)\s+cluster/i);
+              if (clusterMatch) {
+                resultInfo += `\n📊 **Clusters:** ${clusterMatch[1]}`;
+              }
+              
+              resultInfo += `\n⏳ **Note:** Clustering is processing in the background`;
+            } else if (resultString.includes('error') || resultString.includes('Error')) {
+              resultInfo = `\n\n❌ **Status:** Failed\n⚠️ **Error:** ${resultString}`;
+            } else {
+              resultInfo = `\n\n✅ **Status:** Request completed`;
+            }
+          } catch (parseError) {
+            resultInfo = `\n\n✅ **Status:** Request completed`;
+          }
+        }
+        
+        message = `I have initiated keyword clustering with the following configuration:\n\n🌐 **Website:** ${websiteLabel}${urlInfo}${resultInfo}`;
       } else {
         // Handle custom form submission with dynamic field generation
         const formFields = (thisFormState as any).options?.formFields || [];
@@ -755,6 +968,64 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
           campaignOptions={options.campaigns || []}
           templateOptions={options.templates || []}
           icpOptions={options.icps || []}
+          isSubmitted={thisFormState.isSubmitted}
+          isCancelled={thisFormState.isCancelled}
+          submittedData={thisFormState.submittedData as any}
+          serverName={serverName}
+        />
+      </>
+    );
+  }
+
+  if (toolConfig.formType === 'site_keyword') {
+    const options = (thisFormState as any).options || {};
+    return (
+      <>
+        {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
+          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 p-4 shadow-lg dark:bg-orange-900/20">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
+              <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                {localize('com_ui_chat_disabled_complete_form')}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <SiteKeywordForm
+          onSubmit={handleFormSubmit}
+          onCancel={handleFormCancel}
+          serviceAccountOptions={options.serviceAccounts || []}
+          websiteOptions={options.websites || []}
+          keywordSources={options.keywordSources || ['gsc', 'dataforseo']}
+          isSubmitted={thisFormState.isSubmitted}
+          isCancelled={thisFormState.isCancelled}
+          submittedData={thisFormState.submittedData as any}
+          serverName={serverName}
+        />
+      </>
+    );
+  }
+
+  if (toolConfig.formType === 'keyword_cluster') {
+    const options = (thisFormState as any).options || {};
+    return (
+      <>
+        {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
+          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 p-4 shadow-lg dark:bg-orange-900/20">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
+              <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                {localize('com_ui_chat_disabled_complete_form')}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <KeywordClusterForm
+          onSubmit={handleFormSubmit}
+          onCancel={handleFormCancel}
+          websiteOptions={options.websites || []}
           isSubmitted={thisFormState.isSubmitted}
           isCancelled={thisFormState.isCancelled}
           submittedData={thisFormState.submittedData as any}
