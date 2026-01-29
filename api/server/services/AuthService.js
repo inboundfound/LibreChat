@@ -387,6 +387,10 @@ const setAuthTokens = async (userId, res, _session = null) => {
       console.log('token data', result);
     }
 
+    const user = await getUserById(userId);
+    const sessionExpiry = math(process.env.SESSION_EXPIRY, DEFAULT_SESSION_EXPIRY);
+    const token = await generateToken(user, sessionExpiry);
+
     // Get LG auth token only if LG_GRAPHQL_ENDPOINT is configured
     if (process.env.UTILITYBAR_GRAPHQL_URL) {
       console.log('lg graphql endpoint available', process.env.UTILITYBAR_GRAPHQL_URL);
@@ -408,10 +412,6 @@ const setAuthTokens = async (userId, res, _session = null) => {
       }
       console.log('ub auth token', authData);
     }
-
-    const user = await getUserById(userId);
-    const sessionExpiry = math(process.env.SESSION_EXPIRY, DEFAULT_SESSION_EXPIRY);
-    const token = await generateToken(user, sessionExpiry);
 
     res.cookie('refreshToken', refreshToken, {
       expires: new Date(refreshTokenExpires),
