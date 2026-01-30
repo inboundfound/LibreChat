@@ -12,4 +12,8 @@ export const mcpConfig = {
    * Interval for client-side keepalive pings (ms). Defaults to 90s which is below common 120s idle timeouts.
    */
   KEEPALIVE_INTERVAL_MS: math(process.env.MCP_KEEPALIVE_INTERVAL_MS ?? 90000),
+  /** Idle timeout (ms) after which user connections are disconnected. Default: 15 minutes */
+  USER_CONNECTION_IDLE_TIMEOUT: math(
+    process.env.MCP_USER_CONNECTION_IDLE_TIMEOUT ?? 15 * 60 * 1000,
+  ),
 };
