@@ -92,11 +92,11 @@ volumes:
 networks:
   # lg-graphql-mcp (from if-core-apps-mcp)
   mcp_core:
-    name: if-core-apps-mcp_default
+    name: if-core-apps-mcp_lg-mcp-network
     external: true
   # neo4j-mcp-server (from if-neo4j-mcp)
   mcp_neo4j:
-    name: if-neo4j-mcp_default
+    name: if-neo4j-mcp_mcp-network
     external: true
   # wordpress-mcp-python (from if-wordpress-mcp)
   mcp_wordpress:
