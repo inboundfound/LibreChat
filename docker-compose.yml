@@ -34,7 +34,6 @@ services:
       - default
       - mcp_core
       - mcp_neo4j
-      - mcp_wordpress
       - mcp_dataforseo
   mongodb:
     container_name: chat-mongodb
@@ -101,11 +100,7 @@ networks:
   mcp_neo4j:
     name: if-neo4j-mcp_mcp-network
     external: true
-  # wordpress-mcp-python (from if-wordpress-mcp)
-  mcp_wordpress:
-    name: if-wordpress-mcp_default
-    external: true
-  # dataforseo-mcp (from mcp-server-typescript or similar)
+  # dataforseo-mcp (from mcp-server-typescript)
   mcp_dataforseo:
     name: mcp-server-typescript_default
     external: true
