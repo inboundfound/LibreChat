@@ -16,14 +16,18 @@ LibreChat uses Let's Encrypt SSL certificates managed by Certbot. The nginx cont
 ## Certificate Configuration
 
 ### Nginx Configuration
+
 The SSL certificates are configured in `/home/ubuntu/LibreChat/client/nginx.conf`:
+
 ```nginx
 ssl_certificate /etc/letsencrypt/live/vibe.inboundfound.com/fullchain.pem;
 ssl_certificate_key /etc/letsencrypt/live/vibe.inboundfound.com/privkey.pem;
 ```
 
 ### Docker Configuration
+
 The nginx container mounts the certificates as read-only volumes in `deploy-compose.yml`:
+
 ```yaml
 client:
   image: nginx:1.27.0-alpine
@@ -36,19 +40,25 @@ client:
 ## Manual Renewal Process
 
 ### Step 1: Check Certificate Status
+
 ```bash
 sudo certbot certificates
 ```
+
 This shows all certificates, their expiry dates, and paths.
 
 ### Step 2: Stop Nginx Container
+
 The nginx container must be stopped to free up port 80 for the renewal process:
+
 ```bash
 docker stop LibreChat-NGINX
 ```
 
 ### Step 3: Renew Certificate
+
 Use certbot's standalone method to renew the certificate:
+
 ```bash
 sudo certbot renew --cert-name vibe.inboundfound.com --standalone
 ```
@@ -59,9 +69,11 @@ docker start LibreChat-NGINX
 ```
 
 ### Step 5: Verify Renewal
+
 ```bash
 sudo certbot certificates
 ```
+
 Confirm the new expiry date (should be ~90 days from renewal).
 
 ## Automated Renewal Setup
@@ -151,7 +163,9 @@ sudo systemctl start librechat-ssl-renewal.timer
 3. Test nginx configuration: `docker exec LibreChat-NGINX nginx -t`
 
 ### Multiple Domains
+
 If you need to add more domains, update:
+
 1. The nginx.conf file with additional server blocks
 2. The renewal script to include all domains
 3. Request new certificates: `sudo certbot certonly --standalone -d new-domain.com`
