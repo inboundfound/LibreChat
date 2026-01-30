@@ -411,13 +411,9 @@ async function createMCPTool({
     return;
   }
 
-  // Pass cookie string so createToolInstance never references req (avoids "req is not defined" if req is missing/minified)
-  const requestCookie =
-    typeof req !== 'undefined' && req?.headers?.cookie ? req.headers.cookie : '';
-
   return createToolInstance({
     res,
-    requestCookie,
+    req,
     provider,
     toolName,
     serverName,
@@ -427,7 +423,7 @@ async function createMCPTool({
 }
 
 function createToolInstance({
-  requestCookie = '',
+  req,
   res,
   toolName,
   serverName,
@@ -491,15 +487,15 @@ function createToolInstance({
       const baseCustomUserVars =
         config?.configurable?.userMCPAuthMap?.[`${Constants.mcp_prefix}${serverName}`];
 
-      // Get MCP server configuration to check for customJWTAuth (use requestCookie only; never reference req here)
+      // Get MCP server configuration to check for customJWTAuth
       let extractedJWTToken = null;
       try {
         const appConfig = await getAppConfig();
         const serverConfig = appConfig?.mcpConfig?.[serverName];
 
-        if (serverConfig?.customJWTAuth && requestCookie) {
+        if (serverConfig?.customJWTAuth && req?.headers?.cookie) {
           // Extract the specified cookie from the request
-          const parsedCookies = cookies.parse(requestCookie);
+          const parsedCookies = cookies.parse(req.headers.cookie);
           extractedJWTToken = parsedCookies[serverConfig.customJWTAuth];
           if (extractedJWTToken) {
             logger.debug(
