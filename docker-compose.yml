@@ -34,7 +34,6 @@ services:
       - default
       - mcp_core
       - mcp_neo4j
-      - mcp_dataforseo
   mongodb:
     container_name: chat-mongodb
     image: mongo
@@ -99,8 +98,4 @@ networks:
   # neo4j-mcp-server (from if-neo4j-mcp)
   mcp_neo4j:
     name: if-neo4j-mcp_mcp-network
-    external: true
-  # dataforseo-mcp (from mcp-server-typescript)
-  mcp_dataforseo:
-    name: mcp-server-typescript_default
     external: true
