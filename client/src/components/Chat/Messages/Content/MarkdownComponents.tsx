@@ -4,7 +4,6 @@ import { useToastContext } from '@librechat/client';
 import { PermissionTypes, Permissions, apiBaseUrl } from 'librechat-data-provider';
 import MermaidPreview from '~/components/Messages/Content/MermaidPreview';
 import MermaidErrorBoundary from '~/components/Messages/Content/MermaidErrorBoundary';
-import MermaidPreview from '~/components/Messages/Content/MermaidPreview';
 import CodeBlock from '~/components/Messages/Content/CodeBlock';
 import Mermaid from '~/components/Messages/Content/Mermaid';
 import useHasAccess from '~/hooks/Roles/useHasAccess';
