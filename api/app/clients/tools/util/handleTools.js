@@ -442,6 +442,7 @@ Anchor pattern: \\ue202turn{N}{type}{index} where N=turn number, type=search|new
           signal,
           user: safeUser,
           userMCPAuthMap,
+          req: options.req,
           res: options.res,
           streamId: options.req?._resumableStreamId || null,
           model: agent?.model ?? model,
