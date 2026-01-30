@@ -283,6 +283,7 @@ async function reconnectServer({
  * @returns { Promise<Array<typeof tool | { _call: (toolInput: Object | string) => unknown}>> } An object with `_call` method to execute the tool input.
  */
 async function createMCPTools({
+  req,
   res,
   user,
   index,
@@ -324,6 +325,7 @@ async function createMCPTools({
   const serverTools = [];
   for (const tool of result.tools) {
     const toolInstance = await createMCPTool({
+      req,
       res,
       user,
       provider,
@@ -358,6 +360,7 @@ async function createMCPTools({
  * @returns { Promise<typeof tool | { _call: (toolInput: Object | string) => unknown}> } An object with `_call` method to execute the tool input.
  */
 async function createMCPTool({
+  req,
   res,
   user,
   index,
@@ -408,9 +411,13 @@ async function createMCPTool({
     return;
   }
 
+  // Pass cookie string so createToolInstance never references req (avoids "req is not defined" if req is missing/minified)
+  const requestCookie =
+    typeof req !== 'undefined' && req?.headers?.cookie ? req.headers.cookie : '';
+
   return createToolInstance({
     res,
-    req,
+    requestCookie,
     provider,
     toolName,
     serverName,
@@ -420,6 +427,7 @@ async function createMCPTool({
 }
 
 function createToolInstance({
+  requestCookie = '',
   res,
   toolName,
   serverName,
@@ -483,15 +491,15 @@ function createToolInstance({
       const baseCustomUserVars =
         config?.configurable?.userMCPAuthMap?.[`${Constants.mcp_prefix}${serverName}`];
 
-      // Get MCP server configuration to check for customJWTAuth
+      // Get MCP server configuration to check for customJWTAuth (use requestCookie only; never reference req here)
       let extractedJWTToken = null;
       try {
         const appConfig = await getAppConfig();
         const serverConfig = appConfig?.mcpConfig?.[serverName];
 
-        if (serverConfig?.customJWTAuth && req?.headers?.cookie) {
+        if (serverConfig?.customJWTAuth && requestCookie) {
           // Extract the specified cookie from the request
-          const parsedCookies = cookies.parse(req.headers.cookie);
+          const parsedCookies = cookies.parse(requestCookie);
           extractedJWTToken = parsedCookies[serverConfig.customJWTAuth];
           if (extractedJWTToken) {
             logger.debug(
