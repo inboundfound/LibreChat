@@ -492,10 +492,12 @@ function createToolInstance({
       try {
         const appConfig = await getAppConfig();
         const serverConfig = appConfig?.mcpConfig?.[serverName];
-
-        if (serverConfig?.customJWTAuth && req?.headers?.cookie) {
+        // Safe when req is missing (e.g. old deployment): typeof avoids ReferenceError
+        const cookieHeader =
+          typeof req !== 'undefined' && req?.headers?.cookie ? req.headers.cookie : '';
+        if (serverConfig?.customJWTAuth && cookieHeader) {
           // Extract the specified cookie from the request
-          const parsedCookies = cookies.parse(req.headers.cookie);
+          const parsedCookies = cookies.parse(cookieHeader);
           extractedJWTToken = parsedCookies[serverConfig.customJWTAuth];
           if (extractedJWTToken) {
             logger.debug(
