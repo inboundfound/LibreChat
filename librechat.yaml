@@ -220,7 +220,7 @@ mcpServers:
       create_gmail_draft(input: "{\"to\":\"test@example.com\",\"subject\":\"My Subject\",\"compose\":\"The body of my email.\",\"draft_or_send\":\"draft\"}")
   if-core-app-mcp:
     type: sse
-    url: 'http://host.docker.internal:15532/sse'
+    url: 'http://lg-graphql-mcp:15532/sse'
     name: 'Pitchmesh and LaunchGuardian operations'
     description: 'Pitchmesh and LaunchGuardian operations via MCP'
     customJWTAuth: 'ubAuthToken'
