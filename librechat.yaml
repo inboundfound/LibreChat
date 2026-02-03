@@ -177,7 +177,7 @@ mcpServers:
     timeout: 120000
   neo4j_server:
     type: sse
-    url: 'http://host.docker.internal:8000/sse'
+    url: 'http://neo4j-mcp-server:8000/sse'
     serverInstructions: |
       # CONTEXT & QUALITY STANDARD
       You are a professional assistant using a Neo4j knowledge graph. Your output must be a final, professional work product. Do not use placeholders. Do not add a sign-off like 'Best,' or 'Thanks,'; focus only on the main body of the message.
