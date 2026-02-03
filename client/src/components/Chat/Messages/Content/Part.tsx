@@ -141,17 +141,22 @@ const Part = memo(
         const isMCPTool = toolCall.name && toolCall.name.includes(Constants.mcp_delimiter);
         
         return (
-          <ToolCall
-            args={toolCall.args ?? ''}
-            name={toolCall.name || ''}
-            output={toolCall.output ?? ''}
-            initialProgress={toolCall.progress ?? 0.1}
-            isSubmitting={isSubmitting}
-            attachments={attachments}
-            auth={toolCall.auth}
-            expires_at={toolCall.expires_at}
-            isLast={isLast}
-          />
+          <>
+            {isMCPTool && (
+              <MCPToolDetector toolCall={toolCall} output={toolCall.output ?? ''} />
+            )}
+            <ToolCall
+              args={toolCall.args ?? ''}
+              name={toolCall.name || ''}
+              output={toolCall.output ?? ''}
+              initialProgress={toolCall.progress ?? 0.1}
+              isSubmitting={isSubmitting}
+              attachments={attachments}
+              auth={toolCall.auth}
+              expires_at={toolCall.expires_at}
+              isLast={isLast}
+            />
+          </>
         );
       } else if (toolCall.type === ToolCallTypes.CODE_INTERPRETER) {
         const code_interpreter = toolCall[ToolCallTypes.CODE_INTERPRETER];
@@ -196,14 +201,22 @@ const Part = memo(
         const isMCPTool = toolCall.function.name && toolCall.function.name.includes(Constants.mcp_delimiter);
         
         return (
-          <ToolCall
-            initialProgress={toolCall.progress ?? 0.1}
-            isSubmitting={isSubmitting}
-            args={toolCall.function.arguments as string}
-            name={toolCall.function.name}
-            output={toolCall.function.output}
-            isLast={isLast}
-          />
+          <>
+            {isMCPTool && (
+              <MCPToolDetector
+                toolCall={{ name: toolCall.function.name }}
+                output={toolCall.function.output ?? ''}
+              />
+            )}
+            <ToolCall
+              initialProgress={toolCall.progress ?? 0.1}
+              isSubmitting={isSubmitting}
+              args={toolCall.function.arguments as string}
+              name={toolCall.function.name}
+              output={toolCall.function.output}
+              isLast={isLast}
+            />
+          </>
         );
       }
     } else if (part.type === ContentTypes.IMAGE_FILE) {
