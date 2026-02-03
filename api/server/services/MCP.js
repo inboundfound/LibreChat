@@ -285,6 +285,7 @@ async function reconnectServer({
 async function createMCPTools({
   req,
   res,
+  req,
   user,
   index,
   signal,
@@ -327,6 +328,7 @@ async function createMCPTools({
     const toolInstance = await createMCPTool({
       req,
       res,
+      req,
       user,
       provider,
       userMCPAuthMap,
@@ -362,6 +364,7 @@ async function createMCPTools({
 async function createMCPTool({
   req,
   res,
+  req,
   user,
   index,
   signal,
@@ -411,9 +414,10 @@ async function createMCPTool({
     return;
   }
 
+  const requestCookie = req?.headers?.cookie ?? '';
   return createToolInstance({
     res,
-    req,
+    requestCookie,
     provider,
     toolName,
     serverName,
@@ -425,6 +429,7 @@ async function createMCPTool({
 function createToolInstance({
   req,
   res,
+  requestCookie = '',
   toolName,
   serverName,
   toolDefinition,
@@ -493,9 +498,9 @@ function createToolInstance({
         const appConfig = await getAppConfig();
         const serverConfig = appConfig?.mcpConfig?.[serverName];
 
-        if (serverConfig?.customJWTAuth && req?.headers?.cookie) {
-          // Extract the specified cookie from the request
-          const parsedCookies = cookies.parse(req.headers.cookie);
+        if (serverConfig?.customJWTAuth && requestCookie) {
+          // Extract the specified cookie from the request (passed from createMCPTool)
+          const parsedCookies = cookies.parse(requestCookie);
           extractedJWTToken = parsedCookies[serverConfig.customJWTAuth];
           if (extractedJWTToken) {
             logger.debug(
