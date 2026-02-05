@@ -174,6 +174,7 @@ Please follow these instructions when using tools from the respective MCP server
     oauthStart,
     oauthEnd,
     customUserVars,
+    jwtTokenForBody,
   }: {
     user?: IUser;
     serverName: string;
@@ -187,6 +188,8 @@ Please follow these instructions when using tools from the respective MCP server
     flowManager: FlowStateManager<MCPOAuthTokens | null>;
     oauthStart?: (authURL: string) => Promise<void>;
     oauthEnd?: () => Promise<void>;
+    /** JWT token injection config: { fieldName: string, token: string } */
+    jwtTokenForBody?: { fieldName: string; token: string };
   }): Promise<t.FormattedToolResponse> {
     /** User-specific connection */
     let connection: MCPConnection | undefined;
@@ -237,13 +240,30 @@ Please follow these instructions when using tools from the respective MCP server
         conn.setRequestHeaders(currentOptions.headers || {});
       }
 
+      // Inject JWT token into tool arguments if configured
+      let finalToolArguments = toolArguments;
+      if (jwtTokenForBody?.fieldName && jwtTokenForBody?.token) {
+        finalToolArguments = {
+          ...toolArguments,
+          [jwtTokenForBody.fieldName]: jwtTokenForBody.token,
+        };
+        logger.debug(
+          `${logPrefix}[${toolName}] Injected JWT token into tool arguments as '${jwtTokenForBody.fieldName}'`,
+        );
+      }
+
+      // Log what is being sent to MCP tools
+      logger.info(
+        `${logPrefix}[${toolName}] MCP tool call arguments: ${JSON.stringify(finalToolArguments, null, 2)}`,
+      );
+
       const makeRequest = async () =>
         await conn.client.request(
           {
             method: 'tools/call',
             params: {
               name: toolName,
-              arguments: toolArguments,
+              arguments: finalToolArguments,
             },
           },
           CallToolResultSchema,

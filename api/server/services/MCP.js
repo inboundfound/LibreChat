@@ -488,8 +488,9 @@ function createToolInstance({
       const baseCustomUserVars =
         config?.configurable?.userMCPAuthMap?.[`${Constants.mcp_prefix}${serverName}`];
 
-      // Get MCP server configuration to check for customJWTAuth
+      // Get MCP server configuration to check for customJWTAuth and injectJWTToBody (use requestCookie only; never reference req here)
       let extractedJWTToken = null;
+      let injectJWTToBodyField = null;
       try {
         const appConfig = await getAppConfig();
         const serverConfig = appConfig?.mcpConfig?.[serverName];
@@ -508,6 +509,14 @@ function createToolInstance({
             );
           }
         }
+
+        // Check if JWT should be injected into tool body
+        if (serverConfig?.injectJWTToBody) {
+          injectJWTToBodyField = serverConfig.injectJWTToBody;
+          logger.debug(
+            `[MCP][${serverName}] Will inject JWT token into tool body as '${injectJWTToBodyField}'`,
+          );
+        }
       } catch (error) {
         logger.warn(`[MCP][${serverName}] Error loading config for customJWTAuth:`, error);
       }
@@ -518,6 +527,16 @@ function createToolInstance({
         customUserVars.Authorization = `Bearer ${extractedJWTToken}`;
         logger.debug(`[MCP][${serverName}] Added Authorization header from extracted cookie`);
       }
+
+      // Build jwtTokenForBody config if both token and field name are available
+      const jwtTokenForBody =
+        extractedJWTToken && injectJWTToBodyField
+          ? { fieldName: injectJWTToBodyField, token: extractedJWTToken }
+          : undefined;
+
+      logger.info(
+        `[MCP][${serverName}] jwtTokenForBody config: ${JSON.stringify({ fieldName: injectJWTToBodyField, hasToken: !!extractedJWTToken })}`,
+      );
 
       const result = await mcpManager.callTool({
         serverName,
@@ -538,6 +557,7 @@ function createToolInstance({
         },
         oauthStart,
         oauthEnd,
+        jwtTokenForBody,
       });
 
       if (isAssistantsEndpoint(provider) && Array.isArray(result)) {

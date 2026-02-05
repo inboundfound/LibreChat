@@ -106,6 +106,13 @@ const BaseOptionsSchema = z.object({
    * and make it available as a custom user variable for authorization.
    */
   customJWTAuth: z.string().optional(),
+  /**
+   * Inject the JWT token (from customJWTAuth) into tool call arguments.
+   * Specify the field name where the token should be injected.
+   * Example: "authToken" will add { authToken: '<jwt_value>' } to every tool call's arguments.
+   * Requires customJWTAuth to be configured.
+   */
+  injectJWTToBody: z.string().optional(),
 });
 
 export const StdioOptionsSchema = BaseOptionsSchema.extend({
