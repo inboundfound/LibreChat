@@ -12,6 +12,7 @@ mcpSettings:
   allowedDomains:
     - 'host.docker.internal'
     - 'localhost'
+    - 'inboundfound.app.n8n.cloud'
 
 # File strategy s3/firebase
 # fileStrategy: "s3"
@@ -236,6 +237,7 @@ mcpServers:
   #   type: sse
   #   url: 'https://inboundfound.app.n8n.cloud/mcp/run-if-content-audit'
   #   customJWTAuth: 'ubAuthToken'
+  #   injectJWTToBody: 'authToken'
   #   headers:
   #     Authorization: '{{Authorization}}'
   #   name: 'Content Audit Engine'
