@@ -2,8 +2,8 @@ import React, { memo, useMemo, useRef, useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 import { useToastContext } from '@librechat/client';
 import { PermissionTypes, Permissions, apiBaseUrl } from 'librechat-data-provider';
-import MermaidErrorBoundary from '~/components/Messages/Content/MermaidErrorBoundary';
 import MermaidPreview from '~/components/Messages/Content/MermaidPreview';
+import MermaidErrorBoundary from '~/components/Messages/Content/MermaidErrorBoundary';
 import CodeBlock from '~/components/Messages/Content/CodeBlock';
 import Mermaid from '~/components/Messages/Content/Mermaid';
 import useHasAccess from '~/hooks/Roles/useHasAccess';
@@ -39,6 +39,8 @@ export const code: React.ElementType = memo(({ className, children }: TCodeProps
 
   if (isMath) {
     return <>{children}</>;
+  } else if (lang === 'mermaid' && typeof children === 'string') {
+    return <MermaidPreview code={children} />;
   } else if (isMermaid) {
     const content = typeof children === 'string' ? children : String(children);
     return (
@@ -72,6 +74,8 @@ export const codeNoExecution: React.ElementType = memo(({ className, children }:
 
   if (lang === 'math') {
     return children;
+  } else if (lang === 'mermaid' && typeof children === 'string') {
+    return <MermaidPreview code={children} />;
   } else if (lang === 'mermaid') {
     const content = typeof children === 'string' ? children : String(children);
     return <Mermaid>{content}</Mermaid>;
