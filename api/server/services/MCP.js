@@ -327,7 +327,6 @@ async function createMCPTools({
     const toolInstance = await createMCPTool({
       req,
       res,
-      req,
       user,
       provider,
       userMCPAuthMap,
