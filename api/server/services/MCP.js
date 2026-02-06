@@ -427,8 +427,8 @@ async function createMCPTool({
 }
 
 function createToolInstance({
-  requestCookie = '',
   res,
+  requestCookie = '',
   toolName,
   serverName,
   toolDefinition,

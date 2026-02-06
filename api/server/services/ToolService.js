@@ -1,5 +1,23 @@
 const { sleep } = require('@librechat/agents');
 const { logger } = require('@librechat/data-schemas');
+
+/** Max tools per request for OpenAI and similar providers */
+const MAX_TOOLS_FOR_PROVIDER = 128;
+
+/**
+ * Caps the tools array at MAX_TOOLS_FOR_PROVIDER to avoid provider 400 errors.
+ * @param {Array} tools - Agent tools array
+ * @returns {Array} Tools array, possibly truncated to 128
+ */
+function capToolsForProvider(tools) {
+  if (!Array.isArray(tools) || tools.length <= MAX_TOOLS_FOR_PROVIDER) {
+    return tools;
+  }
+  logger.warn(
+    `[ToolService] Capping agent tools from ${tools.length} to ${MAX_TOOLS_FOR_PROVIDER} (provider limit).`,
+  );
+  return tools.slice(0, MAX_TOOLS_FOR_PROVIDER);
+}
 const { tool: toolFn, DynamicStructuredTool } = require('@langchain/core/tools');
 const {
   getToolkitKey,
@@ -512,7 +530,7 @@ async function loadAgentTools({
 
   if (!checkCapability(AgentCapabilities.actions)) {
     return {
-      tools: agentTools,
+      tools: capToolsForProvider(agentTools),
       userMCPAuthMap,
       toolContextMap,
     };
@@ -524,7 +542,7 @@ async function loadAgentTools({
       logger.warn(`No tools found for the specified tool calls: ${_agentTools.join(', ')}`);
     }
     return {
-      tools: agentTools,
+      tools: capToolsForProvider(agentTools),
       userMCPAuthMap,
       toolContextMap,
     };
@@ -651,7 +669,7 @@ async function loadAgentTools({
   }
 
   return {
-    tools: agentTools,
+    tools: capToolsForProvider(agentTools),
     toolContextMap,
     userMCPAuthMap,
   };
