@@ -285,7 +285,6 @@ async function reconnectServer({
 async function createMCPTools({
   req,
   res,
-  req,
   user,
   index,
   signal,
@@ -364,7 +363,6 @@ async function createMCPTools({
 async function createMCPTool({
   req,
   res,
-  req,
   user,
   index,
   signal,
@@ -430,7 +428,6 @@ async function createMCPTool({
 }
 
 function createToolInstance({
-  requestCookie = '',
   res,
   requestCookie = '',
   toolName,
