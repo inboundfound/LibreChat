@@ -285,7 +285,6 @@ async function reconnectServer({
 async function createMCPTools({
   req,
   res,
-  req,
   user,
   index,
   signal,
@@ -328,7 +327,6 @@ async function createMCPTools({
     const toolInstance = await createMCPTool({
       req,
       res,
-      req,
       user,
       provider,
       userMCPAuthMap,
@@ -364,7 +362,6 @@ async function createMCPTools({
 async function createMCPTool({
   req,
   res,
-  req,
   user,
   index,
   signal,

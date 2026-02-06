@@ -55,24 +55,6 @@ const { loadTools } = require('~/app/clients/tools/util');
 const { redactMessage } = require('~/config/parsers');
 const { findPluginAuthsByKeys } = require('~/models');
 
-/** OpenAI (and some other providers) allow max 128 tools per request */
-const MAX_TOOLS_FOR_PROVIDER = 128;
-
-/**
- * Caps the tools array to the provider limit to avoid "Invalid 'tools': array too long" (400).
- * @param {Array} tools - Agent tools array
- * @returns {Array} tools (or slice to MAX_TOOLS_FOR_PROVIDER)
- */
-function capToolsForProvider(tools) {
-  if (!tools || tools.length <= MAX_TOOLS_FOR_PROVIDER) {
-    return tools;
-  }
-  logger.warn(
-    `Tools capped at ${MAX_TOOLS_FOR_PROVIDER} (provider limit); had ${tools.length}. Consider using fewer MCP servers or tools per agent.`,
-  );
-  return tools.slice(0, MAX_TOOLS_FOR_PROVIDER);
-}
-
 /**
  * Processes the required actions by calling the appropriate tools and returning the outputs.
  * @param {OpenAIClient} client - OpenAI or StreamRunManager Client.
