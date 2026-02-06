@@ -7,6 +7,13 @@ version: 1.2.1
 # Cache settings: Set to true to enable caching
 cache: true
 
+# MCP Settings - allow internal/Docker domains for MCP servers
+mcpSettings:
+  allowedDomains:
+    - 'host.docker.internal'
+    - 'localhost'
+    - 'inboundfound.app.n8n.cloud'
+
 # File strategy s3/firebase
 # fileStrategy: "s3"
 
@@ -177,7 +184,7 @@ mcpServers:
     timeout: 120000
   neo4j_server:
     type: sse
-    url: 'http://neo4j-mcp-server:8000/sse'
+    url: 'http://host.docker.internal:8000/sse'
     serverInstructions: |
       # CONTEXT & QUALITY STANDARD
       You are a professional assistant using a Neo4j knowledge graph. Your output must be a final, professional work product. Do not use placeholders. Do not add a sign-off like 'Best,' or 'Thanks,'; focus only on the main body of the message.
@@ -220,43 +227,44 @@ mcpServers:
       create_gmail_draft(input: "{\"to\":\"test@example.com\",\"subject\":\"My Subject\",\"compose\":\"The body of my email.\",\"draft_or_send\":\"draft\"}")
   if-core-app-mcp:
     type: sse
-    url: 'http://lg-graphql-mcp:15532/sse'
+    url: 'http://host.docker.internal:15532/sse'
     name: 'Pitchmesh and LaunchGuardian operations'
     description: 'Pitchmesh and LaunchGuardian operations via MCP'
     customJWTAuth: 'ubAuthToken'
     headers:
       Authorization: '{{Authorization}}'
-  content-audit:
-    type: sse
-    url: 'https://inboundfound.app.n8n.cloud/mcp/run-if-content-audit'
-    customJWTAuth: 'ubAuthToken'
-    headers:
-      Authorization: '{{Authorization}}'
-    name: 'Content Audit Engine'
-    description: 'Specialized content strategy and SEO audit engine'
-    timeout: 480000
-    serverInstructions: |
-      # IMPORTANT SYSTEM RULE
-      All tools on this server have a strict, low-level requirement: they only accept a single parameter named 'input' which MUST be a STRINGIFIED JSON object. You must construct the JSON object first, then convert it to a string before calling the tool.
+  # content-audit:
+  #   type: sse
+  #   url: 'https://inboundfound.app.n8n.cloud/mcp/run-if-content-audit'
+  #   customJWTAuth: 'ubAuthToken'
+  #   injectJWTToBody: 'authToken'
+  #   headers:
+  #     Authorization: '{{Authorization}}'
+  #   name: 'Content Audit Engine'
+  #   description: 'Specialized content strategy and SEO audit engine'
+  #   timeout: 480000
+  #   serverInstructions: |
+  #     # IMPORTANT SYSTEM RULE
+  #     All tools on this server have a strict, low-level requirement: they only accept a single parameter named 'input' which MUST be a STRINGIFIED JSON object. You must construct the JSON object first, then convert it to a string before calling the tool.
 
-      # AVAILABLE TOOLS
-      You have access to two distinct audit engines. You must choose the correct one based on the context of the user's request.
+  #     # AVAILABLE TOOLS
+  #     You have access to two distinct audit engines. You must choose the correct one based on the context of the user's request.
 
-      ---
+  #     ---
 
-      ### Tool 1: `run_if_content_audit` (General SEO Audit)
+  #     ### Tool 1: `run_if_content_audit` (General SEO Audit)
 
-      **Use this tool for a comprehensive, data-driven SEO audit of any public webpage.**
-      It synthesizes Google Search Console (GSC) data, competitive analysis, and on-page metrics to produce a full transformation plan. This is your default choice for general SEO analysis.
+  #     **Use this tool for a comprehensive, data-driven SEO audit of any public webpage.**
+  #     It synthesizes Google Search Console (GSC) data, competitive analysis, and on-page metrics to produce a full transformation plan. This is your default choice for general SEO analysis.
 
-    #serverInstructions: |
-    #  To use the 'create_gmail_draft' tool, you MUST provide a single JSON string for the 'input' parameter.
-    #  Example of the exact string to send: "{\"to\":\"test@example.com\",\"subject\":\"My Subject\",\"compose\":\"My email body.\"}"
-    # serverInstructions: 'Drafts or sends a gmail email. You MUST provide a flat JSON object with three properties: "to", "subject", and "compose". ONLY SEND THE JSON, NOTHING ELSE. Example: { "to": "test@example.com", "subject": "This is a test", "compose": "This is a test body", "draft_or_send": "draft" }'
-    # timeout: 30000
-    #type: streamable-http  # or sse, depending on your n8n setup
-    #url: https://inboundfound.app.n8n.cloud/webhook/21c64616-25ef-483a-837d-514b7dab70e5
-    #serverInstructions: "Use this to draft or send emails through the n8n workflow"
+  #serverInstructions: |
+  #  To use the 'create_gmail_draft' tool, you MUST provide a single JSON string for the 'input' parameter.
+  #  Example of the exact string to send: "{\"to\":\"test@example.com\",\"subject\":\"My Subject\",\"compose\":\"My email body.\"}"
+  # serverInstructions: 'Drafts or sends a gmail email. You MUST provide a flat JSON object with three properties: "to", "subject", and "compose". ONLY SEND THE JSON, NOTHING ELSE. Example: { "to": "test@example.com", "subject": "This is a test", "compose": "This is a test body", "draft_or_send": "draft" }'
+  # timeout: 30000
+  #type: streamable-http  # or sse, depending on your n8n setup
+  #url: https://inboundfound.app.n8n.cloud/webhook/21c64616-25ef-483a-837d-514b7dab70e5
+  #serverInstructions: "Use this to draft or send emails through the n8n workflow"
 #   everything:
 #     # type: sse # type can optionally be omitted
 #     url: http://localhost:3001/sse
