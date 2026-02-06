@@ -283,7 +283,6 @@ async function reconnectServer({
  * @returns { Promise<Array<typeof tool | { _call: (toolInput: Object | string) => unknown}>> } An object with `_call` method to execute the tool input.
  */
 async function createMCPTools({
-  req,
   res,
   user,
   index,
@@ -325,7 +324,6 @@ async function createMCPTools({
   const serverTools = [];
   for (const tool of result.tools) {
     const toolInstance = await createMCPTool({
-      req,
       res,
       user,
       provider,
@@ -360,7 +358,6 @@ async function createMCPTools({
  * @returns { Promise<typeof tool | { _call: (toolInput: Object | string) => unknown}> } An object with `_call` method to execute the tool input.
  */
 async function createMCPTool({
-  req,
   res,
   user,
   index,
@@ -424,7 +421,6 @@ async function createMCPTool({
 }
 
 function createToolInstance({
-  req,
   res,
   requestCookie = '',
   toolName,
