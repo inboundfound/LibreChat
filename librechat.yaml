@@ -236,7 +236,7 @@ mcpServers:
     type: sse
     url: 'https://inboundfound.app.n8n.cloud/mcp/run-if-content-audit'
     customJWTAuth: 'ubAuthToken'
-    injectJWTToBody: 'authToken'
+    # injectJWTToBody: 'authToken'
     headers:
       Authorization: '{{Authorization}}'
     name: 'Content Audit Engine'
