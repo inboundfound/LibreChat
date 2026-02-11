@@ -9,6 +9,7 @@ import CustomForm from './CustomForm';
 import OutreachForm from './OutreachForm';
 import SiteKeywordForm from './SiteKeywordForm';
 import KeywordClusterForm from './KeywordClusterForm';
+import XofuLoginForm from './XofuLoginForm';
 
 interface MCPToolDetectorProps {
   toolCall: any; // Tool call data
@@ -417,7 +418,7 @@ const MCP_TOOL_CONFIGS = {
     extractOptions: (output: string) => {
       try {
         console.log('🔍 Parsing keyword cluster form output:', output);
-        
+
         let parsedData;
         try {
           const outputArray = JSON.parse(output);
@@ -429,22 +430,49 @@ const MCP_TOOL_CONFIGS = {
         } catch {
           parsedData = JSON.parse(output);
         }
-        
+
         const websites = (parsedData.websites_list || []).map((ws: any) => ({
           id: ws.id,
           name: ws.name,
           url: ws.url,
         }));
-        
+
         console.log('✅ Extracted keyword cluster options:', {
           websites: websites.length,
         });
-        
+
         return { websites };
       } catch (e) {
         console.error('❌ Failed to parse keyword cluster form options:', e);
         console.error('❌ Output was:', output);
         return { websites: [] };
+      }
+    },
+  },
+  render_xofu_login_form: {
+    triggerForm: true,
+    formType: 'xofu_login',
+    extractOptions: (output: string) => {
+      try {
+        console.log('🔍 Parsing xofu login form output:', output);
+
+        let parsedData;
+        try {
+          const outputArray = JSON.parse(output);
+          if (Array.isArray(outputArray) && outputArray.length > 0 && outputArray[0].text) {
+            parsedData = JSON.parse(outputArray[0].text);
+          } else {
+            parsedData = outputArray;
+          }
+        } catch {
+          parsedData = JSON.parse(output);
+        }
+
+        console.log('✅ Extracted xofu login form config:', parsedData);
+        return { formType: 'xofu_login' };
+      } catch (e) {
+        console.error('❌ Failed to parse xofu login form:', e);
+        return { formType: 'xofu_login' };
       }
     },
   },
@@ -808,6 +836,18 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
         }
         
         message = `I have initiated keyword clustering with the following configuration:\n\n🌐 **Website:** ${websiteLabel}${urlInfo}${resultInfo}`;
+      } else if (toolConfig?.formType === 'xofu_login') {
+        // Handle xofu login form submission
+        let statusInfo = '';
+        if (data.error) {
+          statusInfo = `\n\n❌ **Status:** Login failed\n⚠️ **Error:** ${data.error}`;
+        } else if (data.token) {
+          statusInfo = `\n\n✅ **Status:** Login successful\n🔐 **Authentication:** Token saved`;
+        } else {
+          statusInfo = `\n\n✅ **Status:** Login completed`;
+        }
+
+        message = `I have submitted the xofu login credentials:\n\n📧 **Email:** ${data.email}${statusInfo}`;
       } else {
         // Handle custom form submission with dynamic field generation
         const formFields = (thisFormState as any).options?.formFields || [];
@@ -1030,6 +1070,31 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
           isCancelled={thisFormState.isCancelled}
           submittedData={thisFormState.submittedData as any}
           serverName={serverName}
+        />
+      </>
+    );
+  }
+
+  if (toolConfig.formType === 'xofu_login') {
+    return (
+      <>
+        {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
+          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 p-4 shadow-lg dark:bg-orange-900/20">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
+              <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                {localize('com_ui_chat_disabled_complete_form')}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <XofuLoginForm
+          onSubmit={handleFormSubmit}
+          onCancel={handleFormCancel}
+          isSubmitted={thisFormState.isSubmitted}
+          isCancelled={thisFormState.isCancelled}
+          submittedData={thisFormState.submittedData as any}
         />
       </>
     );
