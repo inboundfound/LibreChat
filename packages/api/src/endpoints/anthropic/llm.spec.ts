@@ -131,6 +131,21 @@ describe('getLLMConfig', () => {
     expect(result.llmConfig.promptCache).toBe(true);
   });
 
+  it('should add "context-1m" beta header for claude-opus-4-6 model', () => {
+    const modelVariations = ['claude-opus-4-6', 'anthropic/claude-opus-4-6'];
+
+    modelVariations.forEach((model) => {
+      const modelOptions = { model, promptCache: true };
+      const result = getLLMConfig('test-key', { modelOptions });
+      const clientOptions = result.llmConfig.clientOptions;
+      expect(clientOptions?.defaultHeaders).toBeDefined();
+      expect(clientOptions?.defaultHeaders).toHaveProperty('anthropic-beta');
+      const defaultHeaders = clientOptions?.defaultHeaders as Record<string, string>;
+      expect(defaultHeaders['anthropic-beta']).toBe('context-1m-2025-08-07');
+      expect(result.llmConfig.promptCache).toBe(true);
+    });
+  });
+
   it('should pass promptCache boolean for claude-opus-4-5 model formats (no beta header needed)', () => {
     const modelVariations = [
       'claude-opus-4-5',
