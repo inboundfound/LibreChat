@@ -37,6 +37,7 @@ function getClaudeHeaders(
   supportsCacheControl: boolean,
 ): Record<string, string> | undefined {
   if (!supportsCacheControl) {
+    logger.info(`[getClaudeHeaders] model=${model}, supportsCacheControl=false — no beta headers`);
     return undefined;
   }
 
@@ -48,12 +49,18 @@ function getClaudeHeaders(
     return {
       'anthropic-beta': 'token-efficient-tools-2025-02-19,output-128k-2025-02-19',
     };
-  } else if (/claude-sonnet-4/.test(model)) {
+  } else if (/claude-sonnet-4|claude-opus-4-[6-9]/.test(model)) {
+    logger.info(
+      `[getClaudeHeaders] model=${model} — applying context-1m-2025-08-07 beta header (1M context window)`,
+    );
     return {
       'anthropic-beta': 'context-1m-2025-08-07',
     };
   }
 
+  logger.info(
+    `[getClaudeHeaders] model=${model}, supportsCacheControl=true — no beta header matched`,
+  );
   return undefined;
 }
 

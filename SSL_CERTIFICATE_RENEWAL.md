@@ -64,7 +64,6 @@ sudo certbot renew --cert-name vibe.inboundfound.com --standalone
 ```
 
 ### Step 4: Restart Nginx Container
-
 ```bash
 docker start LibreChat-NGINX
 ```
@@ -80,7 +79,6 @@ Confirm the new expiry date (should be ~90 days from renewal).
 ## Automated Renewal Setup
 
 ### Option 1: Cron Job
-
 Create a renewal script at `/home/ubuntu/LibreChat/scripts/renew-ssl.sh`:
 
 ```bash
@@ -101,13 +99,11 @@ echo "SSL renewal completed at $(date)" >> /home/ubuntu/LibreChat/logs/ssl-renew
 ```
 
 Make it executable:
-
 ```bash
 chmod +x /home/ubuntu/LibreChat/scripts/renew-ssl.sh
 ```
 
 Add to crontab (runs weekly on Sunday at 3 AM):
-
 ```bash
 sudo crontab -e
 # Add this line:
@@ -115,7 +111,6 @@ sudo crontab -e
 ```
 
 ### Option 2: Systemd Timer
-
 Create a systemd service at `/etc/systemd/system/librechat-ssl-renewal.service`:
 
 ```ini
@@ -149,7 +144,6 @@ WantedBy=timers.target
 ```
 
 Enable and start the timer:
-
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable librechat-ssl-renewal.timer
@@ -159,13 +153,11 @@ sudo systemctl start librechat-ssl-renewal.timer
 ## Troubleshooting
 
 ### Certificate Not Renewing
-
 1. Check if port 80 is free: `sudo netstat -tlnp | grep :80`
 2. Ensure the domain is properly pointed to the server
 3. Check certbot logs: `sudo cat /var/log/letsencrypt/letsencrypt.log`
 
 ### Nginx Not Starting After Renewal
-
 1. Check nginx logs: `docker logs LibreChat-NGINX`
 2. Verify certificate files exist: `sudo ls -la /etc/letsencrypt/live/vibe.inboundfound.com/`
 3. Test nginx configuration: `docker exec LibreChat-NGINX nginx -t`
@@ -187,7 +179,6 @@ If you need to add more domains, update:
 - Monitor renewal logs to ensure certificates don't expire
 
 ## Related Files
-
 - Nginx config: `/home/ubuntu/LibreChat/client/nginx.conf`
 - Docker compose: `/home/ubuntu/LibreChat/deploy-compose.yml`
 - Certificates: `/etc/letsencrypt/live/vibe.inboundfound.com/`

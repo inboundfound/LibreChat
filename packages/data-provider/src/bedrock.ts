@@ -31,14 +31,16 @@ function getBedrockAnthropicBetaHeaders(model: string): string[] {
       model,
     );
 
-  const isSonnet4PlusModel =
-    /anthropic\.claude-(?:sonnet-[4-9]|[4-9](?:\.\d+)?(?:-\d+)?-sonnet)/.test(model);
+  const isContext1mModel =
+    /anthropic\.claude-(?:sonnet-[4-9]|[4-9](?:\.\d+)?(?:-\d+)?-sonnet|opus-4-[6-9]|4-[6-9](?:\.\d+)?(?:-\d+)?-opus)/.test(
+      model,
+    );
 
   if (isClaudeThinkingModel) {
     betaHeaders.push('output-128k-2025-02-19');
   }
 
-  if (isSonnet4PlusModel) {
+  if (isContext1mModel) {
     betaHeaders.push('context-1m-2025-08-07');
   }
 
