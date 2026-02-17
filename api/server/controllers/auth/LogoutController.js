@@ -27,6 +27,8 @@ const logoutController = async (req, res) => {
     // Clear LG auth cookies if they exist
     res.clearCookie('ubAuthToken');
     res.clearCookie('ub_token_provider');
+    // Clear xofu auth cookie if it exists
+    res.clearCookie('xofuAuthToken');
     const response = { message };
     if (
       isOpenIdUser &&
