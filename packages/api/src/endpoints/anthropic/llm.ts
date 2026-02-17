@@ -164,6 +164,11 @@ function getLLMConfig(
   const headers = getClaudeHeaders(requestOptions.model ?? '', supportsCacheControl);
   if (headers && requestOptions.clientOptions) {
     requestOptions.clientOptions.defaultHeaders = headers;
+    logger.info(
+      `[getLLMConfig] Applied defaultHeaders for model=${requestOptions.model}: ${JSON.stringify(headers)}`,
+    );
+  } else {
+    logger.info(`[getLLMConfig] No defaultHeaders applied for model=${requestOptions.model}`);
   }
 
   if (options.proxy && requestOptions.clientOptions) {
