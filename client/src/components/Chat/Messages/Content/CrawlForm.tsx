@@ -1,43 +1,113 @@
-import React, { useState, useCallback } from 'react';
-import { Button, Input, Label, TextareaAutosize, SelectDropDown } from '@librechat/client';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Button, Input, Label, TextareaAutosize } from '@librechat/client';
+import { Database, Globe, Calendar, FileText, CheckCircle } from 'lucide-react';
+import { useAuthContext } from '~/hooks';
 
 interface CrawlFormData {
-  website: string;
-  launchDate: string;
+  website_id: string;
+  launch_date: string;
   description: string;
+  crawl_config_id: string;
 }
 
 interface WebsiteOption {
-  label: string;
-  value: string;
+  id: string;
+  name: string;
+  url: string;
+}
+
+interface CrawlConfigOption {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+interface PrefilledParams {
+  website_id?: string;
+  launch_date?: string;
+  description?: string;
+  crawl_config_id?: string;
 }
 
 interface CrawlFormProps {
-  onSubmit?: (data: CrawlFormData) => void;
+  onSubmit?: (data: CrawlFormData & { toolResponse?: any }) => void;
   onCancel?: () => void;
   websiteOptions?: WebsiteOption[];
+  crawlConfigOptions?: CrawlConfigOption[];
+  prefilledParams?: PrefilledParams;
+  serverName?: string;
   isSubmitted?: boolean;
   isCancelled?: boolean;
-  submittedData?: CrawlFormData & { websiteLabel?: string };
+  submittedData?: CrawlFormData & {
+    websiteLabel?: string;
+    crawlConfigLabel?: string;
+  };
 }
 
 const CrawlForm: React.FC<CrawlFormProps> = ({
   onSubmit,
   onCancel,
   websiteOptions = [],
+  crawlConfigOptions = [],
+  prefilledParams = {},
+  serverName = '',
   isSubmitted = false,
   isCancelled = false,
   submittedData,
 }) => {
+  const { token } = useAuthContext();
   const [formData, setFormData] = useState<CrawlFormData>({
-    website: '',
-    launchDate: '',
+    website_id: '',
+    launch_date: '',
     description: '',
+    crawl_config_id: 'default', // Default selection
   });
-
-  // Find the selected website option for dropdown display
-  const selectedWebsiteOption = websiteOptions.find((option) => option.value === formData.website);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Pre-populate form from prefilledParams with validation
+  useEffect(() => {
+    if (prefilledParams && Object.keys(prefilledParams).length > 0) {
+      setFormData((prev) => {
+        const updates: Partial<CrawlFormData> = {};
+
+        // Only set website_id if it exists in options
+        if (prefilledParams.website_id) {
+          const websiteExists = websiteOptions.some((w) => w.id === prefilledParams.website_id);
+          if (websiteExists) {
+            updates.website_id = prefilledParams.website_id;
+          } else {
+            console.warn(
+              `⚠️ Prefilled website_id "${prefilledParams.website_id}" not found in available options`,
+            );
+          }
+        }
+
+        // Only set crawl_config_id if it's 'default' or exists in options
+        if (prefilledParams.crawl_config_id) {
+          const configExists =
+            prefilledParams.crawl_config_id === 'default' ||
+            crawlConfigOptions.some((c) => c.id === prefilledParams.crawl_config_id);
+          if (configExists) {
+            updates.crawl_config_id = prefilledParams.crawl_config_id;
+          } else {
+            console.warn(
+              `⚠️ Prefilled crawl_config_id "${prefilledParams.crawl_config_id}" not found in available options`,
+            );
+          }
+        }
+
+        // These are free-form, so always set if provided
+        if (prefilledParams.launch_date) {
+          updates.launch_date = prefilledParams.launch_date;
+        }
+        if (prefilledParams.description) {
+          updates.description = prefilledParams.description;
+        }
+
+        return { ...prev, ...updates };
+      });
+    }
+  }, [prefilledParams, websiteOptions, crawlConfigOptions]);
 
   const handleInputChange = useCallback((field: keyof CrawlFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -47,35 +117,86 @@ const CrawlForm: React.FC<CrawlFormProps> = ({
     async (e: React.FormEvent) => {
       e.preventDefault();
 
-      if (!formData.website || !formData.launchDate || !formData.description) {
+      if (
+        !formData.website_id ||
+        !formData.launch_date ||
+        !formData.description ||
+        !formData.crawl_config_id
+      ) {
         return;
       }
 
       setIsSubmitting(true);
+
       try {
-        onSubmit?.(formData);
+        const toolId = `create_new_crawl_operation_mcp_${serverName}`;
+
+        const payload = {
+          website_id: formData.website_id,
+          launch_date: formData.launch_date,
+          description: formData.description,
+          crawl_config_id: formData.crawl_config_id,
+        };
+
+        console.log('🔍 Calling create_new_crawl_operation tool:', {
+          toolId,
+          payload,
+        });
+
+        const response = await fetch(`/api/agents/tools/${encodeURIComponent(toolId)}/call`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ HTTP error response:', {
+            status: response.status,
+            statusText: response.statusText,
+            errorBody: errorText,
+          });
+          throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+        }
+
+        const result = await response.json();
+        console.log('✅ MCP tool response:', result);
+
+        onSubmit?.({ ...formData, toolResponse: result });
+      } catch (error) {
+        console.error('❌ Error calling MCP tool:', error);
+        onSubmit?.({
+          ...formData,
+          toolResponse: {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          },
+        });
       } finally {
         setIsSubmitting(false);
       }
     },
-    [formData, onSubmit],
+    [formData, onSubmit, serverName, token],
   );
 
   const handleCancel = useCallback(() => {
     onCancel?.();
   }, [onCancel]);
 
-  const isValid = formData.website && formData.launchDate && formData.description;
+  const isValid =
+    formData.website_id && formData.launch_date && formData.description && formData.crawl_config_id;
 
   // If form is cancelled, show cancelled state
   if (isCancelled) {
     return (
-      <div className="p-4 my-4 border border-red-400 shadow-lg rounded-xl bg-red-50 dark:bg-red-900/20">
+      <div className="my-4 rounded-xl border border-red-400 bg-red-50 p-4 shadow-lg dark:bg-red-900/20">
         <div className="mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+          <div className="mb-2 flex items-center gap-2">
+            <div className="h-3 w-3 rounded-full bg-red-500"></div>
             <h3 className="text-lg font-semibold text-red-800 dark:text-red-200">
-              ❌ Crawl Configuration Cancelled
+              Crawl Configuration Cancelled
             </h3>
           </div>
           <p className="text-sm text-red-700 dark:text-red-300">
@@ -88,68 +209,65 @@ const CrawlForm: React.FC<CrawlFormProps> = ({
 
   // If form is submitted, show the form with disabled fields and green outline
   if (isSubmitted && submittedData) {
+    const website = websiteOptions.find((w) => w.id === submittedData.website_id);
+    const websiteLabel = website
+      ? `${website.name} (${website.url})`
+      : submittedData.website_id;
+
+    const crawlConfig = crawlConfigOptions.find((c) => c.id === submittedData.crawl_config_id);
+    const crawlConfigLabel = crawlConfig
+      ? crawlConfig.name
+      : submittedData.crawl_config_id === 'default'
+        ? 'Default Configuration'
+        : submittedData.crawl_config_id;
+
     return (
-      <div className="p-4 my-4 bg-gray-800 border-2 border-green-500 shadow-lg rounded-xl">
+      <div className="my-4 rounded-xl border-2 border-green-500 bg-gray-800 p-4 shadow-lg">
         <div className="mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+          <div className="mb-2 flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-green-500" />
             <h3 className="text-lg font-semibold text-green-400">
-              ✅ Crawl Configuration Submitted
+              Crawl Configuration Submitted
             </h3>
           </div>
           <p className="text-sm text-green-300">
-            The crawl configuration has been submitted and processed.
+            The crawl configuration has been submitted successfully.
           </p>
         </div>
 
-        <div className="space-y-6">
-          {/* Website Field */}
+        <div className="space-y-4">
           <div>
-            <Label htmlFor="website" className="block mb-2 text-sm font-medium text-white">
-              Website
-            </Label>
-            {websiteOptions.length > 0 ? (
-              <div className="w-full px-3 py-2 text-white bg-gray-700 border border-green-500 rounded-md opacity-75">
-                {submittedData.websiteLabel || submittedData.website}
-              </div>
-            ) : (
-              <Input
-                id="website"
-                type="url"
-                value={submittedData.website}
-                className="w-full text-white bg-gray-700 border-green-500 opacity-75"
-                disabled
-              />
-            )}
+            <Label className="mb-2 block text-sm font-medium text-white">Website</Label>
+            <div className="flex items-center gap-2 rounded-md border border-green-500 bg-gray-700 px-3 py-2 text-white opacity-75">
+              <Globe className="h-4 w-4" />
+              <span>{websiteLabel}</span>
+            </div>
           </div>
 
-          {/* Launch Date Field */}
           <div>
-            <Label htmlFor="launchDate" className="block mb-2 text-sm font-medium text-white">
-              Launch Date
+            <Label className="mb-2 block text-sm font-medium text-white">
+              Crawl Configuration
             </Label>
-            <Input
-              id="launchDate"
-              type="datetime-local"
-              value={submittedData.launchDate}
-              className="w-full text-white bg-gray-700 border-green-500 opacity-75"
-              disabled
-            />
+            <div className="flex items-center gap-2 rounded-md border border-green-500 bg-gray-700 px-3 py-2 text-white opacity-75">
+              <Database className="h-4 w-4" />
+              <span>{crawlConfigLabel}</span>
+            </div>
           </div>
 
-          {/* Description Field */}
           <div>
-            <Label htmlFor="description" className="block mb-2 text-sm font-medium text-white">
-              Description
-            </Label>
-            <TextareaAutosize
-              id="description"
-              value={submittedData.description}
-              minRows={3}
-              maxRows={6}
-              className="w-full text-white bg-gray-700 border-green-500 opacity-75 resize-none"
-              disabled
-            />
+            <Label className="mb-2 block text-sm font-medium text-white">Launch Date</Label>
+            <div className="flex items-center gap-2 rounded-md border border-green-500 bg-gray-700 px-3 py-2 text-white opacity-75">
+              <Calendar className="h-4 w-4" />
+              <span>{submittedData.launch_date}</span>
+            </div>
+          </div>
+
+          <div>
+            <Label className="mb-2 block text-sm font-medium text-white">Description</Label>
+            <div className="flex items-center gap-2 rounded-md border border-green-500 bg-gray-700 px-3 py-2 text-white opacity-75">
+              <FileText className="h-4 w-4" />
+              <span>{submittedData.description}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -157,10 +275,10 @@ const CrawlForm: React.FC<CrawlFormProps> = ({
   }
 
   return (
-    <div className="p-4 my-4 bg-gray-800 border border-gray-600 shadow-lg rounded-xl">
+    <div className="my-4 rounded-xl border border-gray-600 bg-gray-800 p-4 shadow-lg">
       <div className="mb-4">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+        <div className="mb-2 flex items-center gap-2">
+          <div className="h-3 w-3 animate-pulse rounded-full bg-blue-500"></div>
           <h3 className="text-lg font-semibold text-white">Website Crawl Configuration</h3>
         </div>
         <p className="text-sm text-gray-300">
@@ -174,62 +292,65 @@ const CrawlForm: React.FC<CrawlFormProps> = ({
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Website Selector */}
         <div>
-          <Label htmlFor="website" className="block mb-2 text-sm font-medium text-white">
+          <Label htmlFor="website_id" className="mb-2 block text-sm font-medium text-white">
             Website
           </Label>
-          {websiteOptions.length > 0 ? (
-            <SelectDropDown
-              id="website"
-              value={
-                selectedWebsiteOption
-                  ? { value: selectedWebsiteOption.value, label: selectedWebsiteOption.label }
-                  : formData.website
-              }
-              setValue={(value) => {
-                // Handle both string and object values
-                const websiteValue = typeof value === 'string' ? value : value?.value || '';
-                handleInputChange('website', websiteValue);
-              }}
-              placeholder="Select a website..."
-              containerClassName="w-full"
-              availableValues={websiteOptions.map((option) => ({
-                value: option.value,
-                label: option.label,
-              }))}
-              showLabel={false}
-              emptyTitle={true}
-            />
-          ) : (
-            <Input
-              id="website"
-              type="url"
-              value={formData.website}
-              onChange={(e) => handleInputChange('website', e.target.value)}
-              placeholder="https://example.com"
-              className="w-full text-white placeholder-gray-400 bg-gray-700 border-gray-600"
-              required
-            />
-          )}
+          <select
+            id="website_id"
+            value={formData.website_id}
+            onChange={(e) => handleInputChange('website_id', e.target.value)}
+            className="w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          >
+            <option value="">Select a website...</option>
+            {websiteOptions.map((website) => (
+              <option key={website.id} value={website.id}>
+                {website.name} ({website.url})
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Launch Date Picker */}
+        {/* Crawl Configuration Selector */}
         <div>
-          <Label htmlFor="launchDate" className="block mb-2 text-sm font-medium text-white">
+          <Label htmlFor="crawl_config_id" className="mb-2 block text-sm font-medium text-white">
+            Crawl Configuration
+          </Label>
+          <select
+            id="crawl_config_id"
+            value={formData.crawl_config_id}
+            onChange={(e) => handleInputChange('crawl_config_id', e.target.value)}
+            className="w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          >
+            <option value="default">Default Configuration</option>
+            {crawlConfigOptions.map((config) => (
+              <option key={config.id} value={config.id}>
+                {config.name}
+                {config.description && ` - ${config.description}`}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Launch Date Picker (changed from datetime-local to date) */}
+        <div>
+          <Label htmlFor="launch_date" className="mb-2 block text-sm font-medium text-white">
             Launch Date
           </Label>
           <Input
-            id="launchDate"
-            type="datetime-local"
-            value={formData.launchDate}
-            onChange={(e) => handleInputChange('launchDate', e.target.value)}
-            className="w-full text-white bg-gray-700 border-gray-600"
+            id="launch_date"
+            type="date"
+            value={formData.launch_date}
+            onChange={(e) => handleInputChange('launch_date', e.target.value)}
+            className="w-full border-gray-600 bg-gray-700 text-white"
             required
           />
         </div>
 
         {/* Description Text Field */}
         <div>
-          <Label htmlFor="description" className="block mb-2 text-sm font-medium text-white">
+          <Label htmlFor="description" className="mb-2 block text-sm font-medium text-white">
             Description
           </Label>
           <TextareaAutosize
@@ -239,7 +360,8 @@ const CrawlForm: React.FC<CrawlFormProps> = ({
             placeholder="Describe what you want to crawl..."
             minRows={3}
             maxRows={6}
-            className="w-full text-white placeholder-gray-400 bg-gray-700 border-gray-600 resize-none"
+            className="w-full resize-none border-gray-600 bg-gray-700 text-white placeholder-gray-400"
+            aria-label="Description"
             required
           />
         </div>
@@ -250,7 +372,7 @@ const CrawlForm: React.FC<CrawlFormProps> = ({
             type="button"
             onClick={handleCancel}
             variant="outline"
-            className="flex-1 text-gray-300 bg-transparent border-gray-600 hover:bg-gray-700"
+            className="flex-1 border-gray-600 bg-transparent text-gray-300 hover:bg-gray-700"
             disabled={isSubmitting}
           >
             Cancel
@@ -258,15 +380,15 @@ const CrawlForm: React.FC<CrawlFormProps> = ({
           <Button
             type="submit"
             disabled={!isValid || isSubmitting}
-            className="flex-1 text-white bg-blue-600 hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-600"
+            className="flex-1 bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-600"
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white rounded-full animate-spin border-t-transparent"></div>
-                Submitting...
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                Creating Crawl...
               </span>
             ) : (
-              'Confirm Crawl'
+              'Create Crawl Operation'
             )}
           </Button>
         </div>
