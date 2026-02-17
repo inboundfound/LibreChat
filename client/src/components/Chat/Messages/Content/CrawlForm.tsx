@@ -211,7 +211,7 @@ const CrawlForm: React.FC<CrawlFormProps> = ({
   if (isSubmitted && submittedData) {
     const website = websiteOptions.find((w) => w.id === submittedData.website_id);
     const websiteLabel = website
-      ? `${website.name} (${website.url})`
+      ? `${website.name}`
       : submittedData.website_id;
 
     const crawlConfig = crawlConfigOptions.find((c) => c.id === submittedData.crawl_config_id);
@@ -305,7 +305,7 @@ const CrawlForm: React.FC<CrawlFormProps> = ({
             <option value="">Select a website...</option>
             {websiteOptions.map((website) => (
               <option key={website.id} value={website.id}>
-                {website.name} ({website.url})
+                {website.name}
               </option>
             ))}
           </select>
