@@ -29,6 +29,7 @@ interface SiteKeywordFormProps {
   serviceAccountOptions?: ServiceAccountOption[];
   websiteOptions?: WebsiteOption[];
   keywordSources?: string[];
+  prefilledParams?: Record<string, string>;
   serverName?: string;
   isSubmitted?: boolean;
   isCancelled?: boolean;
@@ -45,6 +46,7 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
   serviceAccountOptions = [],
   websiteOptions = [],
   keywordSources = ['gsc', 'dataforseo'],
+  prefilledParams = {},
   serverName = '',
   isSubmitted = false,
   isCancelled = false,
@@ -60,7 +62,7 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Initialize default dates (last 30 days)
+  // Initialize default dates (last 30 days) and apply prefilled params
   useEffect(() => {
     const today = new Date();
     const thirtyDaysAgo = new Date(today);
@@ -70,10 +72,17 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
 
     setFormData((prev) => ({
       ...prev,
-      start_date: formatDate(thirtyDaysAgo),
-      end_date: formatDate(today),
+      start_date: prefilledParams.start_date || formatDate(thirtyDaysAgo),
+      end_date: prefilledParams.end_date || formatDate(today),
+      ...(prefilledParams.website_id && { website_id: prefilledParams.website_id }),
+      ...(prefilledParams.service_account_id && {
+        service_account: prefilledParams.service_account_id,
+      }),
+      ...(prefilledParams.keywords_source && {
+        keywords_source: prefilledParams.keywords_source as 'gsc' | 'dataforseo',
+      }),
     }));
-  }, []);
+  }, [prefilledParams]);
 
   const handleInputChange = useCallback((field: keyof SiteKeywordFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -198,10 +207,10 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
   // Cancelled state
   if (isCancelled) {
     return (
-      <div className="p-4 my-4 border border-red-400 shadow-lg rounded-xl bg-red-50 dark:bg-red-900/20">
+      <div className="my-4 rounded-xl border border-red-400 bg-red-50 p-4 shadow-lg dark:bg-red-900/20">
         <div className="mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+          <div className="mb-2 flex items-center gap-2">
+            <div className="h-3 w-3 rounded-full bg-red-500"></div>
             <h3 className="text-lg font-semibold text-red-800 dark:text-red-200">Form Cancelled</h3>
           </div>
           <p className="text-sm text-red-700 dark:text-red-300">
@@ -226,10 +235,10 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
       : submittedData.service_account;
 
     return (
-      <div className="p-4 my-4 bg-gray-800 border-2 border-green-500 shadow-lg rounded-xl">
+      <div className="my-4 rounded-xl border-2 border-green-500 bg-gray-800 p-4 shadow-lg">
         <div className="mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <CheckCircle className="w-5 h-5 text-green-500" />
+          <div className="mb-2 flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-green-500" />
             <h3 className="text-lg font-semibold text-green-400">Keyword Data Loading Submitted</h3>
           </div>
           <p className="text-sm text-green-300">
@@ -240,18 +249,18 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
         <div className="space-y-4">
           {/* Data Source */}
           <div>
-            <Label className="block mb-2 text-sm font-medium text-white">Data Source</Label>
-            <div className="flex items-center gap-2 px-3 py-2 text-white bg-gray-700 border border-green-500 rounded-md opacity-75">
-              <Database className="w-4 h-4" />
+            <Label className="mb-2 block text-sm font-medium text-white">Data Source</Label>
+            <div className="flex items-center gap-2 rounded-md border border-green-500 bg-gray-700 px-3 py-2 text-white opacity-75">
+              <Database className="h-4 w-4" />
               <span>{sourceLabel}</span>
             </div>
           </div>
 
           {/* Website */}
           <div>
-            <Label className="block mb-2 text-sm font-medium text-white">Website</Label>
-            <div className="flex items-center gap-2 px-3 py-2 text-white bg-gray-700 border border-green-500 rounded-md opacity-75">
-              <Globe className="w-4 h-4" />
+            <Label className="mb-2 block text-sm font-medium text-white">Website</Label>
+            <div className="flex items-center gap-2 rounded-md border border-green-500 bg-gray-700 px-3 py-2 text-white opacity-75">
+              <Globe className="h-4 w-4" />
               <span>{websiteLabel}</span>
             </div>
           </div>
@@ -261,10 +270,10 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
             <>
               {submittedData.service_account && (
                 <div>
-                  <Label className="block mb-2 text-sm font-medium text-white">
+                  <Label className="mb-2 block text-sm font-medium text-white">
                     Service Account
                   </Label>
-                  <div className="px-3 py-2 text-white bg-gray-700 border border-green-500 rounded-md opacity-75">
+                  <div className="rounded-md border border-green-500 bg-gray-700 px-3 py-2 text-white opacity-75">
                     {serviceAccountLabel}
                   </div>
                 </div>
@@ -272,9 +281,9 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
 
               {submittedData.start_date && submittedData.end_date && (
                 <div>
-                  <Label className="block mb-2 text-sm font-medium text-white">Date Range</Label>
-                  <div className="flex items-center gap-2 px-3 py-2 text-white bg-gray-700 border border-green-500 rounded-md opacity-75">
-                    <Calendar className="w-4 h-4" />
+                  <Label className="mb-2 block text-sm font-medium text-white">Date Range</Label>
+                  <div className="flex items-center gap-2 rounded-md border border-green-500 bg-gray-700 px-3 py-2 text-white opacity-75">
+                    <Calendar className="h-4 w-4" />
                     <span>
                       {submittedData.start_date} to {submittedData.end_date}
                     </span>
@@ -290,10 +299,10 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
 
   // Active form state
   return (
-    <div className="p-4 my-4 bg-gray-800 border border-gray-600 shadow-lg rounded-xl">
+    <div className="my-4 rounded-xl border border-gray-600 bg-gray-800 p-4 shadow-lg">
       <div className="mb-4">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+        <div className="mb-2 flex items-center gap-2">
+          <div className="h-3 w-3 animate-pulse rounded-full bg-blue-500"></div>
           <h3 className="text-lg font-semibold text-white">Load Site Keyword Data</h3>
         </div>
         <p className="text-sm text-gray-300">
@@ -304,14 +313,14 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Data Source Selector */}
         <div>
-          <Label htmlFor="keywords_source" className="block mb-2 text-sm font-medium text-white">
+          <Label htmlFor="keywords_source" className="mb-2 block text-sm font-medium text-white">
             Data Source
           </Label>
           <select
             id="keywords_source"
             value={formData.keywords_source}
             onChange={(e) => handleInputChange('keywords_source', e.target.value)}
-            className="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           >
             <option value="">Select a data source...</option>
@@ -327,14 +336,14 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
         {/* Website Selector */}
         {formData.keywords_source && (
           <div>
-            <Label htmlFor="website_id" className="block mb-2 text-sm font-medium text-white">
+            <Label htmlFor="website_id" className="mb-2 block text-sm font-medium text-white">
               Website
             </Label>
             <select
               id="website_id"
               value={formData.website_id}
               onChange={(e) => handleInputChange('website_id', e.target.value)}
-              className="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
               <option value="">Select a website...</option>
@@ -354,7 +363,7 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
             <div>
               <Label
                 htmlFor="service_account"
-                className="block mb-2 text-sm font-medium text-white"
+                className="mb-2 block text-sm font-medium text-white"
               >
                 Service Account
               </Label>
@@ -362,7 +371,7 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
                 id="service_account"
                 value={formData.service_account}
                 onChange={(e) => handleInputChange('service_account', e.target.value)}
-                className="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               >
                 <option value="">Select a service account...</option>
@@ -387,7 +396,7 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
 
         {/* Info message for DataForSEO */}
         {formData.keywords_source === 'dataforseo' && (
-          <div className="p-3 border rounded-md border-blue-500/30 bg-blue-900/20">
+          <div className="rounded-md border border-blue-500/30 bg-blue-900/20 p-3">
             <p className="text-sm text-blue-200">
               DataForSEO will load the most recent keyword data available for the selected website.
             </p>
@@ -400,7 +409,7 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
             type="button"
             onClick={handleCancel}
             variant="outline"
-            className="flex-1 text-gray-300 bg-transparent border-gray-600 hover:bg-gray-700"
+            className="flex-1 border-gray-600 bg-transparent text-gray-300 hover:bg-gray-700"
             disabled={isSubmitting}
           >
             Cancel
@@ -408,11 +417,11 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
           <Button
             type="submit"
             disabled={!isFormValid() || isSubmitting}
-            className="flex-1 text-white bg-blue-600 hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-600"
+            className="flex-1 bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-600"
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white rounded-full animate-spin border-t-transparent"></div>
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                 Loading Data...
               </span>
             ) : (

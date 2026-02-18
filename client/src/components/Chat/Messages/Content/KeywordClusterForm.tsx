@@ -18,6 +18,7 @@ interface KeywordClusterFormProps {
   onSubmit?: (data: KeywordClusterFormData & { toolResponse?: any }) => void;
   onCancel?: () => void;
   websiteOptions?: WebsiteOption[];
+  prefilledParams?: Record<string, string>;
   serverName?: string;
   isSubmitted?: boolean;
   isCancelled?: boolean;
@@ -31,6 +32,7 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
   onSubmit,
   onCancel,
   websiteOptions = [],
+  prefilledParams = {},
   serverName = '',
   isSubmitted = false,
   isCancelled = false,
@@ -38,7 +40,7 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
 }) => {
   const { token } = useAuthContext();
   const [formData, setFormData] = useState<{ website_id: string; url_text: string }>({
-    website_id: '',
+    website_id: prefilledParams.website_id || '',
     url_text: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);

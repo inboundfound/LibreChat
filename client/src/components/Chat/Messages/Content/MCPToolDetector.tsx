@@ -185,11 +185,20 @@ const MCP_TOOL_CONFIGS = {
 
         console.log('✅ Extracted custom form fields:', formFields);
 
+        // Convert prefilled_params array to object
+        const prefilledParams: any = {};
+        if (Array.isArray(parsedData.prefilled_params)) {
+          parsedData.prefilled_params.forEach((param: any) => {
+            prefilledParams[param.key] = param.value;
+          });
+        }
+
         return {
           formFields,
           requestId: parsedData.request_id,
           functionToolName: parsedData.function_tool_name,
           submitInstructions: parsedData.submit_instructions || undefined,
+          prefilledParams,
         };
       } catch (e) {
         console.error('❌ Failed to parse custom form options:', e);
@@ -198,6 +207,7 @@ const MCP_TOOL_CONFIGS = {
           formFields: [],
           requestId: null,
           functionToolName: null,
+          prefilledParams: {},
         };
       }
     },
@@ -439,10 +449,19 @@ const MCP_TOOL_CONFIGS = {
           keywordSources,
         });
 
+        // Convert prefilled_params array to object
+        const prefilledParams: any = {};
+        if (Array.isArray(parsedData.prefilled_params)) {
+          parsedData.prefilled_params.forEach((param: any) => {
+            prefilledParams[param.key] = param.value;
+          });
+        }
+
         return {
           serviceAccounts,
           websites,
           keywordSources,
+          prefilledParams,
         };
       } catch (e) {
         console.error('❌ Failed to parse site keyword form options:', e);
@@ -451,6 +470,7 @@ const MCP_TOOL_CONFIGS = {
           serviceAccounts: [],
           websites: [],
           keywordSources: [],
+          prefilledParams: {},
         };
       }
     },
@@ -484,11 +504,19 @@ const MCP_TOOL_CONFIGS = {
           websites: websites.length,
         });
 
-        return { websites };
+        // Convert prefilled_params array to object
+        const prefilledParams: any = {};
+        if (Array.isArray(parsedData.prefilled_params)) {
+          parsedData.prefilled_params.forEach((param: any) => {
+            prefilledParams[param.key] = param.value;
+          });
+        }
+
+        return { websites, prefilledParams };
       } catch (e) {
         console.error('❌ Failed to parse keyword cluster form options:', e);
         console.error('❌ Output was:', output);
-        return { websites: [] };
+        return { websites: [], prefilledParams: {} };
       }
     },
   },
@@ -1068,9 +1096,9 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
     return (
       <>
         {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
-          <div className="p-4 my-4 border border-orange-400 shadow-lg rounded-xl bg-orange-50 dark:bg-orange-900/20">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 p-4 shadow-lg dark:bg-orange-900/20">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
               <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
                 {localize('com_ui_chat_disabled_complete_form')}
               </span>
@@ -1097,9 +1125,9 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
     return (
       <>
         {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
-          <div className="p-4 my-4 border border-orange-400 shadow-lg rounded-xl bg-orange-50 dark:bg-orange-900/20">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 p-4 shadow-lg dark:bg-orange-900/20">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
               <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
                 {localize('com_ui_chat_disabled_complete_form')}
               </span>
@@ -1124,9 +1152,9 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
     return (
       <>
         {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
-          <div className="p-4 my-4 border border-orange-400 shadow-lg rounded-xl bg-orange-50 dark:bg-orange-900/20">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 p-4 shadow-lg dark:bg-orange-900/20">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
               <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
                 {localize('com_ui_chat_disabled_complete_form')}
               </span>
@@ -1138,6 +1166,7 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
           onSubmit={handleFormSubmit}
           onCancel={handleFormCancel}
           formFields={(thisFormState as any).options?.formFields || []}
+          prefilledParams={(thisFormState as any).options?.prefilledParams || {}}
           isSubmitted={thisFormState.isSubmitted}
           isCancelled={thisFormState.isCancelled}
           submittedData={thisFormState.submittedData}
@@ -1152,9 +1181,9 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
     return (
       <>
         {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
-          <div className="p-4 my-4 border border-orange-400 shadow-lg rounded-xl bg-orange-50 dark:bg-orange-900/20">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 p-4 shadow-lg dark:bg-orange-900/20">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
               <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
                 {localize('com_ui_chat_disabled_complete_form')}
               </span>
@@ -1184,9 +1213,9 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
     return (
       <>
         {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
-          <div className="p-4 my-4 border border-orange-400 shadow-lg rounded-xl bg-orange-50 dark:bg-orange-900/20">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 p-4 shadow-lg dark:bg-orange-900/20">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
               <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
                 {localize('com_ui_chat_disabled_complete_form')}
               </span>
@@ -1200,6 +1229,7 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
           serviceAccountOptions={options.serviceAccounts || []}
           websiteOptions={options.websites || []}
           keywordSources={options.keywordSources || ['gsc', 'dataforseo']}
+          prefilledParams={options.prefilledParams || {}}
           isSubmitted={thisFormState.isSubmitted}
           isCancelled={thisFormState.isCancelled}
           submittedData={thisFormState.submittedData as any}
@@ -1214,9 +1244,9 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
     return (
       <>
         {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
-          <div className="p-4 my-4 border border-orange-400 shadow-lg rounded-xl bg-orange-50 dark:bg-orange-900/20">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 p-4 shadow-lg dark:bg-orange-900/20">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
               <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
                 {localize('com_ui_chat_disabled_complete_form')}
               </span>
@@ -1228,6 +1258,7 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
           onSubmit={handleFormSubmit}
           onCancel={handleFormCancel}
           websiteOptions={options.websites || []}
+          prefilledParams={options.prefilledParams || {}}
           isSubmitted={thisFormState.isSubmitted}
           isCancelled={thisFormState.isCancelled}
           submittedData={thisFormState.submittedData as any}
@@ -1241,9 +1272,9 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
     return (
       <>
         {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
-          <div className="p-4 my-4 border border-orange-400 shadow-lg rounded-xl bg-orange-50 dark:bg-orange-900/20">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 p-4 shadow-lg dark:bg-orange-900/20">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
               <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
                 {localize('com_ui_chat_disabled_complete_form')}
               </span>
