@@ -72,7 +72,7 @@ module.exports = {
           850: '#171717',
           900: '#0d0d0d',
         },
-        green_old: {
+        green: {
           50: '#f1f9f7',
           100: '#def2ed',
           200: '#a6e5d6',
@@ -84,19 +84,6 @@ module.exports = {
           700: '#0a4f53',
           800: '#06373e',
           900: '#031f29',
-        },
-        green: {
-          50:  '#E8F1FF', // Lightest tint
-          100: '#D1E3FF',
-          200: '#A3C7FF',
-          300: '#75ABFF',
-          400: '#478FFF',
-          500: '#1874FF', // Your Primary Color
-          550: '#166EF2', // Intermediate shade
-          600: '#1568E5',
-          700: '#1153B8',
-          800: '#0D3E8A',
-          900: '#092A5D', // Darkest shade
         },
         'brand-purple': 'var(--brand-purple)',
         presentation: 'var(--presentation)',

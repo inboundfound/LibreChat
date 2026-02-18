@@ -19,7 +19,7 @@ mcpSettings:
 
 # Custom interface configuration
 interface:
-  customWelcome: 'Welcome to CitationOS!'
+  customWelcome: 'Welcome to Inbound Chat!'
   # Privacy policy settings
   privacyPolicy:
     externalUrl: 'https://librechat.ai/privacy-policy'
