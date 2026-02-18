@@ -218,6 +218,14 @@ mcpServers:
       - Confirm required inputs (keywords, locations, language, URLs) before calling tools.
       - Use focused calls instead of broad crawls to control latency and quota.
       - Surface source metrics (volumes, ranks, costs) when available instead of generalities.
+  xofu-mcp:
+    type: sse
+    url: 'http://host.docker.internal:15542/sse'
+    name: 'xofu mcp'
+    description: 'xofu operations via MCP'
+    customJWTAuth: 'xofuAuthToken'
+    headers:
+      Authorization: '{{Authorization}}'
   # draftOrSendEmail:
   #   type: sse
   #   url: https://inboundfound.app.n8n.cloud/mcp/create-gmail-email/sse
