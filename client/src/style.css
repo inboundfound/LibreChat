@@ -18,7 +18,7 @@
   --gray-800: #212121;
   --gray-850: #171717;
   --gray-900: #0d0d0d;
-  /* --green-50: #ecfdf5;
+  --green-50: #ecfdf5;
   --green-100: #d1fae5;
   --green-200: #a7f3d0;
   --green-300: #6ee7b7;
@@ -28,18 +28,7 @@
   --green-700: #047857;
   --green-800: #065f46;
   --green-900: #064e3b;
-  --green-950: #022c22; */
-  --green-50:  #E8F1FF;
-  --green-100: #D1E3FF;
-  --green-200: #A3C7FF;
-  --green-300: #75ABFF;
-  --green-400: #478FFF;
-  --green-500: #1874FF;
-  --green-550: #166EF2;
-  --green-600: #1568E5;
-  --green-700: #1153B8;
-  --green-800: #0D3E8A;
-  --green-900: #092A5D;    
+  --green-950: #022c22;
   --red-50: #fef2f2;
   --red-100: #fee2e2;
   --red-200: #fecaca;
@@ -1369,8 +1358,7 @@ button {
 .btn-primary {
   --tw-bg-opacity: 1;
   --tw-text-opacity: 1;
-  /* background-color: rgba(16, 163, 127, var(--tw-bg-opacity)); */
-  background-color: var(--green-500);
+  background-color: rgba(16, 163, 127, var(--tw-bg-opacity));
   color: rgba(255, 255, 255, var(--tw-text-opacity));
 }
 .btn-primary:hover {
