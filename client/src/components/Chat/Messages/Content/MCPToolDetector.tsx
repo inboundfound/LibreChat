@@ -185,11 +185,20 @@ const MCP_TOOL_CONFIGS = {
 
         console.log('✅ Extracted custom form fields:', formFields);
 
+        // Convert prefilled_params array to object
+        const prefilledParams: any = {};
+        if (Array.isArray(parsedData.prefilled_params)) {
+          parsedData.prefilled_params.forEach((param: any) => {
+            prefilledParams[param.key] = param.value;
+          });
+        }
+
         return {
           formFields,
           requestId: parsedData.request_id,
           functionToolName: parsedData.function_tool_name,
           submitInstructions: parsedData.submit_instructions || undefined,
+          prefilledParams,
         };
       } catch (e) {
         console.error('❌ Failed to parse custom form options:', e);
@@ -198,6 +207,7 @@ const MCP_TOOL_CONFIGS = {
           formFields: [],
           requestId: null,
           functionToolName: null,
+          prefilledParams: {},
         };
       }
     },
@@ -439,10 +449,19 @@ const MCP_TOOL_CONFIGS = {
           keywordSources,
         });
 
+        // Convert prefilled_params array to object
+        const prefilledParams: any = {};
+        if (Array.isArray(parsedData.prefilled_params)) {
+          parsedData.prefilled_params.forEach((param: any) => {
+            prefilledParams[param.key] = param.value;
+          });
+        }
+
         return {
           serviceAccounts,
           websites,
           keywordSources,
+          prefilledParams,
         };
       } catch (e) {
         console.error('❌ Failed to parse site keyword form options:', e);
@@ -451,6 +470,7 @@ const MCP_TOOL_CONFIGS = {
           serviceAccounts: [],
           websites: [],
           keywordSources: [],
+          prefilledParams: {},
         };
       }
     },
@@ -484,11 +504,19 @@ const MCP_TOOL_CONFIGS = {
           websites: websites.length,
         });
 
-        return { websites };
+        // Convert prefilled_params array to object
+        const prefilledParams: any = {};
+        if (Array.isArray(parsedData.prefilled_params)) {
+          parsedData.prefilled_params.forEach((param: any) => {
+            prefilledParams[param.key] = param.value;
+          });
+        }
+
+        return { websites, prefilledParams };
       } catch (e) {
         console.error('❌ Failed to parse keyword cluster form options:', e);
         console.error('❌ Output was:', output);
-        return { websites: [] };
+        return { websites: [], prefilledParams: {} };
       }
     },
   },
@@ -848,9 +876,11 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
       } else if (toolConfig?.formType === 'site_keyword') {
         // Handle site keyword form submission with tool response
         const sourceLabel = data.keywords_source === 'gsc' ? 'Google Search Console' : 'DataForSEO';
-        const website = (thisFormState as any).options?.websites?.find((w: any) => w.id === data.website_id);
+        const website = (thisFormState as any).options?.websites?.find(
+          (w: any) => w.id === data.website_id,
+        );
         const websiteLabel = website ? `${website.name} (${website.url})` : data.website_id;
-        
+
         let dateInfo = '';
         let serviceAccountInfo = '';
         if (data.keywords_source === 'gsc') {
@@ -858,40 +888,50 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
             dateInfo = `\n📅 **Date Range:** ${data.start_date} to ${data.end_date}`;
           }
           if (data.service_account) {
-            const serviceAccount = (thisFormState as any).options?.serviceAccounts?.find((sa: any) => sa.id === data.service_account);
-            const serviceAccountLabel = serviceAccount ? serviceAccount.email : data.service_account;
+            const serviceAccount = (thisFormState as any).options?.serviceAccounts?.find(
+              (sa: any) => sa.id === data.service_account,
+            );
+            const serviceAccountLabel = serviceAccount
+              ? serviceAccount.email
+              : data.service_account;
             serviceAccountInfo = `\n🔑 **Service Account:** ${serviceAccountLabel}`;
           }
         }
-        
+
         let resultInfo = '';
         if (data.toolResponse?.result) {
           // Parse and display result summary
           try {
-            const resultString = typeof data.toolResponse.result === 'string' 
-              ? data.toolResponse.result 
-              : JSON.stringify(data.toolResponse.result);
-            
+            const resultString =
+              typeof data.toolResponse.result === 'string'
+                ? data.toolResponse.result
+                : JSON.stringify(data.toolResponse.result);
+
             // Check if the result indicates success
-            const isSuccess = resultString.includes('successfully') || 
-                            resultString.includes('created') ||
-                            resultString.includes('if_lg');
-            
+            const isSuccess =
+              resultString.includes('successfully') ||
+              resultString.includes('created') ||
+              resultString.includes('if_lg');
+
             if (isSuccess) {
               resultInfo = `\n\n✅ **Status:** Operation created successfully`;
-              
+
               // Try to extract operation ID
               const idMatch = resultString.match(/'id':\s*'([a-f0-9-]+)'/);
               if (idMatch) {
                 resultInfo += `\n📋 **Operation ID:** ${idMatch[1]}`;
               }
-              
+
               // Try to extract description
               const descMatch = resultString.match(/'descriptions':\s*'([^']+)'/);
               if (descMatch) {
                 resultInfo += `\n📝 **Description:** ${descMatch[1]}`;
               }
-            } else if (resultString.includes('error') || resultString.includes('Error') || resultString.includes('failed')) {
+            } else if (
+              resultString.includes('error') ||
+              resultString.includes('Error') ||
+              resultString.includes('failed')
+            ) {
               resultInfo = `\n\n❌ **Status:** Failed\n⚠️ **Error:** ${resultString}`;
             } else {
               resultInfo = `\n\n✅ **Status:** Request completed\n📄 **Response:** ${resultString.substring(0, 200)}`;
@@ -900,46 +940,50 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
             resultInfo = `\n\n✅ **Status:** Request completed\n📄 **Response:** ${String(data.toolResponse.result).substring(0, 200)}`;
           }
         }
-        
+
         message = `I have loaded site keyword data with the following configuration:\n\n🔍 **Source:** ${sourceLabel}\n🌐 **Website:** ${websiteLabel}${serviceAccountInfo}${dateInfo}${resultInfo}`;
       } else if (toolConfig?.formType === 'keyword_cluster') {
         // Handle keyword cluster form submission with tool response
-        const website = (thisFormState as any).options?.websites?.find((w: any) => w.id === data.website_id);
+        const website = (thisFormState as any).options?.websites?.find(
+          (w: any) => w.id === data.website_id,
+        );
         const websiteLabel = website ? `${website.name} (${website.url})` : data.website_id;
-        
+
         let urlInfo = '';
         if (data.url_data && Array.isArray(data.url_data) && data.url_data.length > 0) {
           urlInfo = `\n📄 **URL Scope:** ${data.url_data.length} specific URL(s)`;
         } else {
           urlInfo = `\n📄 **URL Scope:** All keywords on website`;
         }
-        
+
         let resultInfo = '';
         if (data.toolResponse?.result) {
           try {
-            const resultString = typeof data.toolResponse.result === 'string' 
-              ? data.toolResponse.result 
-              : JSON.stringify(data.toolResponse.result);
-            
-            const isSuccess = resultString.includes('successfully') || 
-                            resultString.includes('created') ||
-                            resultString.includes('cluster');
-            
+            const resultString =
+              typeof data.toolResponse.result === 'string'
+                ? data.toolResponse.result
+                : JSON.stringify(data.toolResponse.result);
+
+            const isSuccess =
+              resultString.includes('successfully') ||
+              resultString.includes('created') ||
+              resultString.includes('cluster');
+
             if (isSuccess) {
               resultInfo = `\n\n✅ **Status:** Clustering operation created successfully`;
-              
+
               // Try to extract operation ID
               const idMatch = resultString.match(/'id':\s*'([a-f0-9-]+)'/);
               if (idMatch) {
                 resultInfo += `\n📋 **Operation ID:** ${idMatch[1]}`;
               }
-              
+
               // Try to extract cluster count if available
               const clusterMatch = resultString.match(/(\d+)\s+cluster/i);
               if (clusterMatch) {
                 resultInfo += `\n📊 **Clusters:** ${clusterMatch[1]}`;
               }
-              
+
               resultInfo += `\n⏳ **Note:** Clustering is processing in the background`;
             } else if (resultString.includes('error') || resultString.includes('Error')) {
               resultInfo = `\n\n❌ **Status:** Failed\n⚠️ **Error:** ${resultString}`;
@@ -950,7 +994,7 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
             resultInfo = `\n\n✅ **Status:** Request completed`;
           }
         }
-        
+
         message = `I have initiated keyword clustering with the following configuration:\n\n🌐 **Website:** ${websiteLabel}${urlInfo}${resultInfo}`;
       } else if (toolConfig?.formType === 'xofu_login') {
         // Handle xofu login form submission
@@ -1122,6 +1166,7 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
           onSubmit={handleFormSubmit}
           onCancel={handleFormCancel}
           formFields={(thisFormState as any).options?.formFields || []}
+          prefilledParams={(thisFormState as any).options?.prefilledParams || {}}
           isSubmitted={thisFormState.isSubmitted}
           isCancelled={thisFormState.isCancelled}
           submittedData={thisFormState.submittedData}
@@ -1184,6 +1229,7 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
           serviceAccountOptions={options.serviceAccounts || []}
           websiteOptions={options.websites || []}
           keywordSources={options.keywordSources || ['gsc', 'dataforseo']}
+          prefilledParams={options.prefilledParams || {}}
           isSubmitted={thisFormState.isSubmitted}
           isCancelled={thisFormState.isCancelled}
           submittedData={thisFormState.submittedData as any}
@@ -1212,6 +1258,7 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
           onSubmit={handleFormSubmit}
           onCancel={handleFormCancel}
           websiteOptions={options.websites || []}
+          prefilledParams={options.prefilledParams || {}}
           isSubmitted={thisFormState.isSubmitted}
           isCancelled={thisFormState.isCancelled}
           submittedData={thisFormState.submittedData as any}

@@ -18,6 +18,7 @@ interface KeywordClusterFormProps {
   onSubmit?: (data: KeywordClusterFormData & { toolResponse?: any }) => void;
   onCancel?: () => void;
   websiteOptions?: WebsiteOption[];
+  prefilledParams?: Record<string, string>;
   serverName?: string;
   isSubmitted?: boolean;
   isCancelled?: boolean;
@@ -31,6 +32,7 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
   onSubmit,
   onCancel,
   websiteOptions = [],
+  prefilledParams = {},
   serverName = '',
   isSubmitted = false,
   isCancelled = false,
@@ -38,7 +40,7 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
 }) => {
   const { token } = useAuthContext();
   const [formData, setFormData] = useState<{ website_id: string; url_text: string }>({
-    website_id: '',
+    website_id: prefilledParams.website_id || '',
     url_text: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,7 +51,7 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
 
   const parseUrls = (urlText: string): string[] => {
     if (!urlText.trim()) return [];
-    
+
     return urlText
       .split('\n')
       .map((url) => url.trim())
@@ -68,18 +70,18 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
 
       try {
         const toolId = `load_keyword_cluster_mcp_${serverName}`;
-        
+
         const urlArray = parseUrls(formData.url_text);
-        
+
         const payload: any = {
           website_id: formData.website_id,
         };
-        
+
         // Only include url_data if URLs were provided
         if (urlArray.length > 0) {
           payload.url_data = urlArray;
         }
-        
+
         console.log('🔍 Calling load_keyword_cluster:', {
           toolId,
           payload,
@@ -90,7 +92,7 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(payload),
         });
@@ -129,7 +131,7 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
           formData,
           toolId: `load_keyword_cluster_mcp_${serverName}`,
         });
-        
+
         onSubmit?.({
           website_id: formData.website_id,
           url_data: parseUrls(formData.url_text),
@@ -159,9 +161,7 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
         <div className="mb-4">
           <div className="mb-2 flex items-center gap-2">
             <div className="h-3 w-3 rounded-full bg-red-500"></div>
-            <h3 className="text-lg font-semibold text-red-800 dark:text-red-200">
-              Form Cancelled
-            </h3>
+            <h3 className="text-lg font-semibold text-red-800 dark:text-red-200">Form Cancelled</h3>
           </div>
           <p className="text-sm text-red-700 dark:text-red-300">
             The keyword clustering has been cancelled.
@@ -182,9 +182,7 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
         <div className="mb-4">
           <div className="mb-2 flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-green-500" />
-            <h3 className="text-lg font-semibold text-green-400">
-              Keyword Clustering Submitted
-            </h3>
+            <h3 className="text-lg font-semibold text-green-400">Keyword Clustering Submitted</h3>
           </div>
           <p className="text-sm text-green-300">
             The keyword clustering request has been submitted successfully.
@@ -240,9 +238,7 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
           <div className="h-3 w-3 animate-pulse rounded-full bg-blue-500"></div>
           <h3 className="text-lg font-semibold text-white">Create Keyword Clusters</h3>
         </div>
-        <p className="text-sm text-gray-300">
-          Configure keyword clustering for your website.
-        </p>
+        <p className="text-sm text-gray-300">Configure keyword clustering for your website.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -274,9 +270,9 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
               URLs (Optional)
             </Label>
             <div className="group relative">
-              <Info className="h-4 w-4 text-gray-400 cursor-help" />
-              <div className="pointer-events-none absolute left-0 bottom-full mb-2 hidden w-64 rounded-lg bg-gray-900 p-3 text-xs text-gray-200 shadow-lg group-hover:block z-10">
-                <p className="font-semibold mb-1">URL Filter</p>
+              <Info className="h-4 w-4 cursor-help text-gray-400" />
+              <div className="pointer-events-none absolute bottom-full left-0 z-10 mb-2 hidden w-64 rounded-lg bg-gray-900 p-3 text-xs text-gray-200 shadow-lg group-hover:block">
+                <p className="mb-1 font-semibold">URL Filter</p>
                 <p>
                   Filter keywords to specific pages on your website. If provided, only keywords
                   associated with these URLs will be clustered. If left empty, all keywords across

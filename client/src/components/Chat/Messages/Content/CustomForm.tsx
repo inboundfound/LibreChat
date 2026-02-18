@@ -19,6 +19,7 @@ interface CustomFormProps {
   onSubmit?: (data: CustomFormData) => void;
   onCancel?: () => void;
   formFields?: CustomFormField[];
+  prefilledParams?: Record<string, string>;
   isSubmitted?: boolean;
   isCancelled?: boolean;
   submittedData?: CustomFormData;
@@ -29,6 +30,7 @@ const CustomForm: React.FC<CustomFormProps> = ({
   onSubmit,
   onCancel,
   formFields = [],
+  prefilledParams = {},
   isSubmitted = false,
   isCancelled = false,
   submittedData,
@@ -38,11 +40,19 @@ const CustomForm: React.FC<CustomFormProps> = ({
   const [formData, setFormData] = useState<CustomFormData>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Initialize form data with empty values for each field
+  // Initialize form data with empty values for each field, then apply prefilled params
   React.useEffect(() => {
     const initialData: CustomFormData = {};
     formFields.forEach((field) => {
-      if (field.type === 'bool') {
+      // Check if there's a prefilled value matching the field id or label
+      const prefilledValue = prefilledParams[field.id] || prefilledParams[field.label];
+      if (prefilledValue !== undefined) {
+        if (field.type === 'bool') {
+          initialData[field.id] = prefilledValue === 'true';
+        } else {
+          initialData[field.id] = prefilledValue;
+        }
+      } else if (field.type === 'bool') {
         initialData[field.id] = false;
       } else if (field.type === 'selector' || field.type === 'textarea') {
         // Use default value if provided, otherwise empty string
@@ -52,7 +62,7 @@ const CustomForm: React.FC<CustomFormProps> = ({
       }
     });
     setFormData(initialData);
-  }, [formFields]);
+  }, [formFields, prefilledParams]);
 
   const handleInputChange = useCallback((fieldId: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [fieldId]: value }));
