@@ -139,12 +139,10 @@ const Part = memo(
       } else if (isToolCall) {
         // Check if this is an MCP tool that should trigger a form
         const isMCPTool = toolCall.name && toolCall.name.includes(Constants.mcp_delimiter);
-        
+
         return (
           <>
-            {isMCPTool && (
-              <MCPToolDetector toolCall={toolCall} output={toolCall.output ?? ''} />
-            )}
+            {isMCPTool && <MCPToolDetector toolCall={toolCall} output={toolCall.output ?? ''} />}
             <ToolCall
               args={toolCall.args ?? ''}
               name={toolCall.name || ''}
@@ -198,8 +196,9 @@ const Part = memo(
         }
 
         // Check if this is an MCP tool that should trigger a form
-        const isMCPTool = toolCall.function.name && toolCall.function.name.includes(Constants.mcp_delimiter);
-        
+        const isMCPTool =
+          toolCall.function.name && toolCall.function.name.includes(Constants.mcp_delimiter);
+
         return (
           <>
             {isMCPTool && (
