@@ -157,10 +157,10 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
   // Cancelled state
   if (isCancelled) {
     return (
-      <div className="p-4 my-4 border border-red-400 shadow-lg rounded-xl bg-red-50 dark:bg-red-900/20">
+      <div className="my-4 rounded-xl border border-red-400 bg-red-50 p-4 shadow-lg dark:bg-red-900/20">
         <div className="mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+          <div className="mb-2 flex items-center gap-2">
+            <div className="h-3 w-3 rounded-full bg-red-500"></div>
             <h3 className="text-lg font-semibold text-red-800 dark:text-red-200">Form Cancelled</h3>
           </div>
           <p className="text-sm text-red-700 dark:text-red-300">
@@ -178,10 +178,10 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
     const urlCount = submittedData.url_data?.length || 0;
 
     return (
-      <div className="p-4 my-4 bg-gray-800 border-2 border-green-500 shadow-lg rounded-xl">
+      <div className="my-4 rounded-xl border-2 border-green-500 bg-gray-800 p-4 shadow-lg">
         <div className="mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <CheckCircle className="w-5 h-5 text-green-500" />
+          <div className="mb-2 flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-green-500" />
             <h3 className="text-lg font-semibold text-green-400">Keyword Clustering Submitted</h3>
           </div>
           <p className="text-sm text-green-300">
@@ -192,18 +192,18 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
         <div className="space-y-4">
           {/* Website */}
           <div>
-            <Label className="block mb-2 text-sm font-medium text-white">Website</Label>
-            <div className="flex items-center gap-2 px-3 py-2 text-white bg-gray-700 border border-green-500 rounded-md opacity-75">
-              <Globe className="w-4 h-4" />
+            <Label className="mb-2 block text-sm font-medium text-white">Website</Label>
+            <div className="flex items-center gap-2 rounded-md border border-green-500 bg-gray-700 px-3 py-2 text-white opacity-75">
+              <Globe className="h-4 w-4" />
               <span>{websiteLabel}</span>
             </div>
           </div>
 
           {/* URL Scope */}
           <div>
-            <Label className="block mb-2 text-sm font-medium text-white">URL Scope</Label>
-            <div className="flex items-center gap-2 px-3 py-2 text-white bg-gray-700 border border-green-500 rounded-md opacity-75">
-              <FileText className="w-4 h-4" />
+            <Label className="mb-2 block text-sm font-medium text-white">URL Scope</Label>
+            <div className="flex items-center gap-2 rounded-md border border-green-500 bg-gray-700 px-3 py-2 text-white opacity-75">
+              <FileText className="h-4 w-4" />
               <span>
                 {urlCount > 0
                   ? `${urlCount} specific URL${urlCount > 1 ? 's' : ''}`
@@ -215,8 +215,8 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
           {/* Show URLs if provided */}
           {urlCount > 0 && submittedData.url_data && (
             <div>
-              <Label className="block mb-2 text-sm font-medium text-white">URLs</Label>
-              <div className="px-3 py-2 overflow-y-auto text-sm text-white bg-gray-700 border border-green-500 rounded-md opacity-75 max-h-32">
+              <Label className="mb-2 block text-sm font-medium text-white">URLs</Label>
+              <div className="max-h-32 overflow-y-auto rounded-md border border-green-500 bg-gray-700 px-3 py-2 text-sm text-white opacity-75">
                 {submittedData.url_data.map((url, index) => (
                   <div key={index} className="py-1">
                     {url}
@@ -232,10 +232,10 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
 
   // Active form state
   return (
-    <div className="p-4 my-4 bg-gray-800 border border-gray-600 shadow-lg rounded-xl">
+    <div className="my-4 rounded-xl border border-gray-600 bg-gray-800 p-4 shadow-lg">
       <div className="mb-4">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+        <div className="mb-2 flex items-center gap-2">
+          <div className="h-3 w-3 animate-pulse rounded-full bg-blue-500"></div>
           <h3 className="text-lg font-semibold text-white">Create Keyword Clusters</h3>
         </div>
         <p className="text-sm text-gray-300">Configure keyword clustering for your website.</p>
@@ -244,14 +244,14 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Website Selector */}
         <div>
-          <Label htmlFor="website_id" className="block mb-2 text-sm font-medium text-white">
+          <Label htmlFor="website_id" className="mb-2 block text-sm font-medium text-white">
             Website <span className="text-red-400">*</span>
           </Label>
           <select
             id="website_id"
             value={formData.website_id}
             onChange={(e) => handleInputChange('website_id', e.target.value)}
-            className="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           >
             <option value="">Select a website...</option>
@@ -265,13 +265,13 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
 
         {/* URL List (Optional) */}
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="mb-2 flex items-center gap-2">
             <Label htmlFor="url_text" className="text-sm font-medium text-white">
               URLs (Optional)
             </Label>
-            <div className="relative group">
-              <Info className="w-4 h-4 text-gray-400 cursor-help" />
-              <div className="absolute left-0 z-10 hidden w-64 p-3 mb-2 text-xs text-gray-200 bg-gray-900 rounded-lg shadow-lg pointer-events-none bottom-full group-hover:block">
+            <div className="group relative">
+              <Info className="h-4 w-4 cursor-help text-gray-400" />
+              <div className="pointer-events-none absolute bottom-full left-0 z-10 mb-2 hidden w-64 rounded-lg bg-gray-900 p-3 text-xs text-gray-200 shadow-lg group-hover:block">
                 <p className="mb-1 font-semibold">URL Filter</p>
                 <p>
                   Filter keywords to specific pages on your website. If provided, only keywords
@@ -286,7 +286,7 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
             value={formData.url_text}
             onChange={(e) => handleInputChange('url_text', e.target.value)}
             placeholder="https://example.com/blog/article-1&#10;https://example.com/services/consulting&#10;https://example.com/about"
-            className="w-full px-3 py-2 text-white placeholder-gray-400 bg-gray-700 border border-gray-600 rounded-md focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             minRows={4}
             maxRows={10}
           />
@@ -297,7 +297,7 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
         </div>
 
         {/* Info Box */}
-        <div className="p-3 border rounded-md border-blue-500/30 bg-blue-900/20">
+        <div className="rounded-md border border-blue-500/30 bg-blue-900/20 p-3">
           <p className="text-sm text-blue-200">
             {formData.url_text.trim()
               ? '✓ Clustering will be performed for the specified URLs only'
@@ -311,7 +311,7 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
             type="button"
             onClick={handleCancel}
             variant="outline"
-            className="flex-1 text-gray-300 bg-transparent border-gray-600 hover:bg-gray-700"
+            className="flex-1 border-gray-600 bg-transparent text-gray-300 hover:bg-gray-700"
             disabled={isSubmitting}
           >
             Cancel
@@ -319,11 +319,11 @@ const KeywordClusterForm: React.FC<KeywordClusterFormProps> = ({
           <Button
             type="submit"
             disabled={!isFormValid() || isSubmitting}
-            className="flex-1 text-white bg-blue-600 hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-600"
+            className="flex-1 bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-600"
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white rounded-full animate-spin border-t-transparent"></div>
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                 Creating Clusters...
               </span>
             ) : (
