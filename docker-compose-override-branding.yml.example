@@ -1,0 +1,12 @@
+# How to Update Favicon and Logo (light+dark) to use the image in /client/public/custom_assets folder
+# Reference: https://github.com/danny-avila/LibreChat/discussions/2674#discussioncomment-13341063
+
+# add this in docker-compose.override.yml
+# services: 
+	# api:
+	#	... existing config
+	# volumes:
+	#	- ./client/public/custom_assets/favicon-32x32.png:/app/client/dist/assets/favicon-32x32.png
+	#	- ./client/public/custom_assets/favicon-16x16.png:/app/client/dist/assets/favicon-16x16.png
+	#	- ./client/public/custom_assets/logo.svg:/app/client/dist/assets/logo.svg
+  # - ./client/public/custom_assets/logo-light-mode.svg:/app/client/dist/assets/logo-light-mode.svg
