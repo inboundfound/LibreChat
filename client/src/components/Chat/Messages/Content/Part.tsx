@@ -9,7 +9,6 @@ import {
 import { memo } from 'react';
 import type { TMessageContentParts, TAttachment } from 'librechat-data-provider';
 import { OpenAIImageGen, EmptyText, Reasoning, ExecuteCode, AgentUpdate, Text } from './Parts';
-import { useShareContext } from '~/Providers';
 import { ErrorMessage } from './MessageContent';
 import RetrievalCall from './RetrievalCall';
 import AgentHandoff from './AgentHandoff';
@@ -32,8 +31,6 @@ type PartProps = {
 
 const Part = memo(
   ({ part, isSubmitting, attachments, isLast, showCursor, isCreatedByUser }: PartProps) => {
-    const { isSharedConvo } = useShareContext();
-
     if (!part) {
       return null;
     }
@@ -145,7 +142,7 @@ const Part = memo(
 
         return (
           <>
-            {isMCPTool && !isSharedConvo && <MCPToolDetector toolCall={toolCall} output={toolCall.output ?? ''} />}
+            {isMCPTool && <MCPToolDetector toolCall={toolCall} output={toolCall.output ?? ''} />}
             <ToolCall
               args={toolCall.args ?? ''}
               name={toolCall.name || ''}
@@ -204,7 +201,7 @@ const Part = memo(
 
         return (
           <>
-            {isMCPTool && !isSharedConvo && (
+            {isMCPTool && (
               <MCPToolDetector
                 toolCall={{ name: toolCall.function.name }}
                 output={toolCall.function.output ?? ''}
