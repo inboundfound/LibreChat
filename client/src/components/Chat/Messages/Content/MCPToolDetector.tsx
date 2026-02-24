@@ -9,6 +9,8 @@ import CustomForm from './CustomForm';
 import OutreachForm from './OutreachForm';
 import SiteKeywordForm from './SiteKeywordForm';
 import KeywordClusterForm from './KeywordClusterForm';
+import XofuLoginForm from './XofuLoginForm';
+import AddCrawlConfigForm from './AddCrawlConfigForm';
 
 interface MCPToolDetectorProps {
   toolCall: any; // Tool call data
@@ -22,56 +24,98 @@ const MCP_TOOL_CONFIGS = {
     formType: 'crawl',
     extractOptions: (output: string) => {
       try {
-        // Parse the websites string format: "url1|id1,url2|id2,..."
-        // Capture everything after "websites::" until the end of the string or NOTE
-        const websitesMatch = output.match(/websites::(.+?)(?:\n|$)/);
-        if (!websitesMatch) {
-          console.log('No websites found in output');
-          return [];
+        console.log('🔍 Parsing crawl form output:', output);
+
+        let parsedData;
+        try {
+          // Handle TextContent array format: [{"type": "text", "text": "{...}"}]
+          const outputArray = JSON.parse(output);
+          if (Array.isArray(outputArray) && outputArray.length > 0 && outputArray[0].text) {
+            parsedData = JSON.parse(outputArray[0].text);
+          } else {
+            parsedData = outputArray;
+          }
+        } catch {
+          parsedData = JSON.parse(output);
         }
 
-        const websitesString = websitesMatch[1];
-        console.log('Raw websites string:', websitesString);
-        console.log('Full output for debugging:', output);
+        const websites = (parsedData.websites || []).map((ws: any) => ({
+          id: ws.id,
+          name: ws.name || ws.url,
+          url: ws.url,
+        }));
 
-        const websitePairs = websitesString.split(',');
-        console.log('Website pairs:', websitePairs);
-        console.log('Number of pairs found:', websitePairs.length);
+        const crawlConfigs = (parsedData.crawl_configs || []).map((config: any) => ({
+          id: config.id,
+          name: config.name,
+          description: config.description,
+          created_at: config.created_at,
+        }));
 
-        const options = websitePairs
-          .map((pair) => {
-            const [url, id] = pair.split('|');
-            if (!url || !id) {
-              console.log('Invalid pair:', pair);
-              return null;
-            }
+        // Convert prefilled_params array to object
+        const prefilledParams: any = {};
+        if (Array.isArray(parsedData.prefilled_params)) {
+          parsedData.prefilled_params.forEach((param: any) => {
+            prefilledParams[param.key] = param.value;
+          });
+        }
 
-            // Clean up any extra text or newlines from the ID
-            const cleanId = id.split('\n')[0].split('\\n')[0].replace(/\\n/g, '');
+        console.log('✅ Extracted crawl form options:', {
+          websites: websites.length,
+          crawlConfigs: crawlConfigs.length,
+          prefilledParams,
+        });
 
-            // Extract domain name from URL for display
-            let label = url;
-            try {
-              const domain = new URL(url).hostname.replace('www.', '');
-              label = domain;
-            } catch (e) {
-              // If URL parsing fails, use the URL as is
-              label = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
-            }
-
-            return {
-              label: label,
-              value: url,
-              id: cleanId,
-            };
-          })
-          .filter(Boolean);
-
-        console.log('Extracted website options:', options);
-        return options;
+        return {
+          websites,
+          crawlConfigs,
+          prefilledParams,
+        };
       } catch (e) {
-        console.error('Failed to parse website options:', e);
-        return [];
+        console.error('❌ Failed to parse crawl form options:', e);
+        return {
+          websites: [],
+          crawlConfigs: [],
+          prefilledParams: {},
+        };
+      }
+    },
+  },
+  render_add_crawl_config_form: {
+    triggerForm: true,
+    formType: 'add_crawl_config',
+    extractOptions: (output: string) => {
+      try {
+        console.log('🔍 Parsing add crawl config form output:', output);
+
+        let parsedData;
+        try {
+          const outputArray = JSON.parse(output);
+          if (Array.isArray(outputArray) && outputArray[0]?.text) {
+            parsedData = JSON.parse(outputArray[0].text);
+          } else {
+            parsedData = outputArray;
+          }
+        } catch {
+          parsedData = {};
+        }
+
+        // Convert prefilled_params array to object
+        const prefilledParams: any = {};
+        if (Array.isArray(parsedData.prefilled_params)) {
+          parsedData.prefilled_params.forEach((param: any) => {
+            prefilledParams[param.key] = param.value;
+          });
+        }
+
+        console.log('✅ Extracted add crawl config form options:', {
+          prefilledParams,
+        });
+
+        return { prefilledParams };
+      } catch (e) {
+        console.error('❌ Failed to parse add crawl config form options:', e);
+        return { prefilledParams: {} };
       }
     },
   },
@@ -141,11 +185,20 @@ const MCP_TOOL_CONFIGS = {
 
         console.log('✅ Extracted custom form fields:', formFields);
 
+        // Convert prefilled_params array to object
+        const prefilledParams: any = {};
+        if (Array.isArray(parsedData.prefilled_params)) {
+          parsedData.prefilled_params.forEach((param: any) => {
+            prefilledParams[param.key] = param.value;
+          });
+        }
+
         return {
           formFields,
           requestId: parsedData.request_id,
           functionToolName: parsedData.function_tool_name,
           submitInstructions: parsedData.submit_instructions || undefined,
+          prefilledParams,
         };
       } catch (e) {
         console.error('❌ Failed to parse custom form options:', e);
@@ -154,6 +207,7 @@ const MCP_TOOL_CONFIGS = {
           formFields: [],
           requestId: null,
           functionToolName: null,
+          prefilledParams: {},
         };
       }
     },
@@ -395,10 +449,19 @@ const MCP_TOOL_CONFIGS = {
           keywordSources,
         });
 
+        // Convert prefilled_params array to object
+        const prefilledParams: any = {};
+        if (Array.isArray(parsedData.prefilled_params)) {
+          parsedData.prefilled_params.forEach((param: any) => {
+            prefilledParams[param.key] = param.value;
+          });
+        }
+
         return {
           serviceAccounts,
           websites,
           keywordSources,
+          prefilledParams,
         };
       } catch (e) {
         console.error('❌ Failed to parse site keyword form options:', e);
@@ -407,6 +470,7 @@ const MCP_TOOL_CONFIGS = {
           serviceAccounts: [],
           websites: [],
           keywordSources: [],
+          prefilledParams: {},
         };
       }
     },
@@ -417,7 +481,7 @@ const MCP_TOOL_CONFIGS = {
     extractOptions: (output: string) => {
       try {
         console.log('🔍 Parsing keyword cluster form output:', output);
-        
+
         let parsedData;
         try {
           const outputArray = JSON.parse(output);
@@ -429,22 +493,57 @@ const MCP_TOOL_CONFIGS = {
         } catch {
           parsedData = JSON.parse(output);
         }
-        
+
         const websites = (parsedData.websites_list || []).map((ws: any) => ({
           id: ws.id,
           name: ws.name,
           url: ws.url,
         }));
-        
+
         console.log('✅ Extracted keyword cluster options:', {
           websites: websites.length,
         });
-        
-        return { websites };
+
+        // Convert prefilled_params array to object
+        const prefilledParams: any = {};
+        if (Array.isArray(parsedData.prefilled_params)) {
+          parsedData.prefilled_params.forEach((param: any) => {
+            prefilledParams[param.key] = param.value;
+          });
+        }
+
+        return { websites, prefilledParams };
       } catch (e) {
         console.error('❌ Failed to parse keyword cluster form options:', e);
         console.error('❌ Output was:', output);
-        return { websites: [] };
+        return { websites: [], prefilledParams: {} };
+      }
+    },
+  },
+  render_xofu_login_form: {
+    triggerForm: true,
+    formType: 'xofu_login',
+    extractOptions: (output: string) => {
+      try {
+        console.log('🔍 Parsing xofu login form output:', output);
+
+        let parsedData;
+        try {
+          const outputArray = JSON.parse(output);
+          if (Array.isArray(outputArray) && outputArray.length > 0 && outputArray[0].text) {
+            parsedData = JSON.parse(outputArray[0].text);
+          } else {
+            parsedData = outputArray;
+          }
+        } catch {
+          parsedData = JSON.parse(output);
+        }
+
+        console.log('✅ Extracted xofu login form config:', parsedData);
+        return { formType: 'xofu_login' };
+      } catch (e) {
+        console.error('❌ Failed to parse xofu login form:', e);
+        return { formType: 'xofu_login' };
       }
     },
   },
@@ -628,15 +727,27 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
           templateLabel: template?.name,
         };
       } else if (toolConfig?.formType === 'crawl') {
-        const websiteLabel = (thisFormState as any).options?.find(
-          (opt: any) => opt.value === data.website,
-        )?.label;
-        if (websiteLabel) {
-          submittedDataWithLabels = {
-            ...data,
-            websiteLabel,
-          };
-        }
+        const options = (thisFormState as any).options || {};
+        const website = options.websites?.find((w: any) => w.id === data.website_id);
+        const websiteLabel = website ? `${website.name} (${website.url})` : data.website_id;
+
+        const crawlConfig = options.crawlConfigs?.find((c: any) => c.id === data.crawl_config_id);
+        const crawlConfigLabel = crawlConfig
+          ? crawlConfig.name
+          : data.crawl_config_id === 'default'
+            ? 'Default Configuration'
+            : data.crawl_config_id;
+
+        submittedDataWithLabels = {
+          ...data,
+          websiteLabel,
+          crawlConfigLabel,
+        };
+      } else if (toolConfig?.formType === 'add_crawl_config') {
+        submittedDataWithLabels = {
+          ...data,
+          fileName: (data as any).file?.name,
+        };
       }
 
       // Update form state
@@ -653,14 +764,75 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
 
       if (toolConfig?.formType === 'crawl') {
         // Handle crawl form submission with specific field mapping
-        const websiteLabel =
-          (thisFormState as any).options?.find((opt: any) => opt.value === data.website)?.label ||
-          data.website;
-        const launchDate = data.launchDate
-          ? new Date(data.launchDate).toLocaleString()
+        const options = (thisFormState as any).options || {};
+        const website = options.websites?.find((w: any) => w.id === data.website_id);
+        const websiteLabel = website ? `${website.name} (${website.url})` : data.website_id;
+
+        const crawlConfig = options.crawlConfigs?.find((c: any) => c.id === data.crawl_config_id);
+        const crawlConfigLabel = crawlConfig
+          ? crawlConfig.name
+          : data.crawl_config_id === 'default'
+            ? 'Default Configuration'
+            : data.crawl_config_id;
+
+        const launchDate = data.launch_date
+          ? new Date(data.launch_date).toLocaleDateString()
           : 'Not specified';
 
-        message = `I have submitted the crawl configuration with the following details:\n\n🌐 **Website:** ${websiteLabel}\n📅 **Launch Date:** ${launchDate}\n📝 **Description:** ${data.description || 'Not specified'}\n\nPlease proceed with the crawl based on these details.`;
+        let resultInfo = '';
+        if (data.toolResponse?.result) {
+          try {
+            const resultString =
+              typeof data.toolResponse.result === 'string'
+                ? data.toolResponse.result
+                : JSON.stringify(data.toolResponse.result);
+
+            const isSuccess =
+              resultString.includes('successfully') ||
+              resultString.includes('created') ||
+              resultString.includes('crawl');
+
+            if (isSuccess) {
+              resultInfo = `\n\n✅ **Status:** Crawl operation created successfully`;
+              const idMatch = resultString.match(
+                /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/,
+              );
+              if (idMatch) {
+                resultInfo += `\n📋 **Operation ID:** ${idMatch[0]}`;
+              }
+            } else if (resultString.includes('error') || resultString.includes('Error')) {
+              resultInfo = `\n\n❌ **Status:** Failed\n⚠️ **Error:** ${resultString}`;
+            } else {
+              resultInfo = `\n\n✅ **Status:** Request completed`;
+            }
+          } catch (parseError) {
+            resultInfo = `\n\n✅ **Status:** Request completed`;
+          }
+        }
+
+        message = `I have submitted the crawl configuration with the following details:\n\n🌐 **Website:** ${websiteLabel}\n⚙️ **Crawl Config:** ${crawlConfigLabel}\n📅 **Launch Date:** ${launchDate}\n📝 **Description:** ${data.description || 'Not specified'}${resultInfo}`;
+      } else if (toolConfig?.formType === 'add_crawl_config') {
+        const fileName = (data as any).file?.name || 'config file';
+
+        let resultInfo = '';
+        if (data.toolResponse?.result) {
+          try {
+            const configData =
+              typeof data.toolResponse.result === 'string'
+                ? JSON.parse(data.toolResponse.result)
+                : data.toolResponse.result;
+
+            if (configData.id) {
+              resultInfo = `\n\n✅ **Status:** Configuration created successfully\n📋 **Config ID:** ${configData.id}`;
+            }
+          } catch (parseError) {
+            resultInfo = `\n\n✅ **Status:** Configuration created`;
+          }
+        } else if (data.toolResponse?.error) {
+          resultInfo = `\n\n❌ **Status:** Failed\n⚠️ **Error:** ${data.toolResponse.error}`;
+        }
+
+        message = `I have created the crawl configuration:\n\n📝 **Name:** ${data.name}\n📄 **File:** ${fileName}\n💬 **Description:** ${data.description || 'Not specified'}${resultInfo}`;
       } else if (toolConfig?.formType === 'outreach') {
         // Handle outreach form submission with tool response
         const options = (thisFormState as any).options || {};
@@ -704,9 +876,11 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
       } else if (toolConfig?.formType === 'site_keyword') {
         // Handle site keyword form submission with tool response
         const sourceLabel = data.keywords_source === 'gsc' ? 'Google Search Console' : 'DataForSEO';
-        const website = (thisFormState as any).options?.websites?.find((w: any) => w.id === data.website_id);
+        const website = (thisFormState as any).options?.websites?.find(
+          (w: any) => w.id === data.website_id,
+        );
         const websiteLabel = website ? `${website.name} (${website.url})` : data.website_id;
-        
+
         let dateInfo = '';
         let serviceAccountInfo = '';
         if (data.keywords_source === 'gsc') {
@@ -714,40 +888,50 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
             dateInfo = `\n📅 **Date Range:** ${data.start_date} to ${data.end_date}`;
           }
           if (data.service_account) {
-            const serviceAccount = (thisFormState as any).options?.serviceAccounts?.find((sa: any) => sa.id === data.service_account);
-            const serviceAccountLabel = serviceAccount ? serviceAccount.email : data.service_account;
+            const serviceAccount = (thisFormState as any).options?.serviceAccounts?.find(
+              (sa: any) => sa.id === data.service_account,
+            );
+            const serviceAccountLabel = serviceAccount
+              ? serviceAccount.email
+              : data.service_account;
             serviceAccountInfo = `\n🔑 **Service Account:** ${serviceAccountLabel}`;
           }
         }
-        
+
         let resultInfo = '';
         if (data.toolResponse?.result) {
           // Parse and display result summary
           try {
-            const resultString = typeof data.toolResponse.result === 'string' 
-              ? data.toolResponse.result 
-              : JSON.stringify(data.toolResponse.result);
-            
+            const resultString =
+              typeof data.toolResponse.result === 'string'
+                ? data.toolResponse.result
+                : JSON.stringify(data.toolResponse.result);
+
             // Check if the result indicates success
-            const isSuccess = resultString.includes('successfully') || 
-                            resultString.includes('created') ||
-                            resultString.includes('if_lg');
-            
+            const isSuccess =
+              resultString.includes('successfully') ||
+              resultString.includes('created') ||
+              resultString.includes('if_lg');
+
             if (isSuccess) {
               resultInfo = `\n\n✅ **Status:** Operation created successfully`;
-              
+
               // Try to extract operation ID
               const idMatch = resultString.match(/'id':\s*'([a-f0-9-]+)'/);
               if (idMatch) {
                 resultInfo += `\n📋 **Operation ID:** ${idMatch[1]}`;
               }
-              
+
               // Try to extract description
               const descMatch = resultString.match(/'descriptions':\s*'([^']+)'/);
               if (descMatch) {
                 resultInfo += `\n📝 **Description:** ${descMatch[1]}`;
               }
-            } else if (resultString.includes('error') || resultString.includes('Error') || resultString.includes('failed')) {
+            } else if (
+              resultString.includes('error') ||
+              resultString.includes('Error') ||
+              resultString.includes('failed')
+            ) {
               resultInfo = `\n\n❌ **Status:** Failed\n⚠️ **Error:** ${resultString}`;
             } else {
               resultInfo = `\n\n✅ **Status:** Request completed\n📄 **Response:** ${resultString.substring(0, 200)}`;
@@ -756,46 +940,50 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
             resultInfo = `\n\n✅ **Status:** Request completed\n📄 **Response:** ${String(data.toolResponse.result).substring(0, 200)}`;
           }
         }
-        
+
         message = `I have loaded site keyword data with the following configuration:\n\n🔍 **Source:** ${sourceLabel}\n🌐 **Website:** ${websiteLabel}${serviceAccountInfo}${dateInfo}${resultInfo}`;
       } else if (toolConfig?.formType === 'keyword_cluster') {
         // Handle keyword cluster form submission with tool response
-        const website = (thisFormState as any).options?.websites?.find((w: any) => w.id === data.website_id);
+        const website = (thisFormState as any).options?.websites?.find(
+          (w: any) => w.id === data.website_id,
+        );
         const websiteLabel = website ? `${website.name} (${website.url})` : data.website_id;
-        
+
         let urlInfo = '';
         if (data.url_data && Array.isArray(data.url_data) && data.url_data.length > 0) {
           urlInfo = `\n📄 **URL Scope:** ${data.url_data.length} specific URL(s)`;
         } else {
           urlInfo = `\n📄 **URL Scope:** All keywords on website`;
         }
-        
+
         let resultInfo = '';
         if (data.toolResponse?.result) {
           try {
-            const resultString = typeof data.toolResponse.result === 'string' 
-              ? data.toolResponse.result 
-              : JSON.stringify(data.toolResponse.result);
-            
-            const isSuccess = resultString.includes('successfully') || 
-                            resultString.includes('created') ||
-                            resultString.includes('cluster');
-            
+            const resultString =
+              typeof data.toolResponse.result === 'string'
+                ? data.toolResponse.result
+                : JSON.stringify(data.toolResponse.result);
+
+            const isSuccess =
+              resultString.includes('successfully') ||
+              resultString.includes('created') ||
+              resultString.includes('cluster');
+
             if (isSuccess) {
               resultInfo = `\n\n✅ **Status:** Clustering operation created successfully`;
-              
+
               // Try to extract operation ID
               const idMatch = resultString.match(/'id':\s*'([a-f0-9-]+)'/);
               if (idMatch) {
                 resultInfo += `\n📋 **Operation ID:** ${idMatch[1]}`;
               }
-              
+
               // Try to extract cluster count if available
               const clusterMatch = resultString.match(/(\d+)\s+cluster/i);
               if (clusterMatch) {
                 resultInfo += `\n📊 **Clusters:** ${clusterMatch[1]}`;
               }
-              
+
               resultInfo += `\n⏳ **Note:** Clustering is processing in the background`;
             } else if (resultString.includes('error') || resultString.includes('Error')) {
               resultInfo = `\n\n❌ **Status:** Failed\n⚠️ **Error:** ${resultString}`;
@@ -806,8 +994,20 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
             resultInfo = `\n\n✅ **Status:** Request completed`;
           }
         }
-        
+
         message = `I have initiated keyword clustering with the following configuration:\n\n🌐 **Website:** ${websiteLabel}${urlInfo}${resultInfo}`;
+      } else if (toolConfig?.formType === 'xofu_login') {
+        // Handle xofu login form submission
+        let statusInfo = '';
+        if (data.error) {
+          statusInfo = `\n\n❌ **Status:** Login failed\n⚠️ **Error:** ${data.error}`;
+        } else if (data.token) {
+          statusInfo = `\n\n✅ **Status:** Login successful\n🔐 **Authentication:** Token saved`;
+        } else {
+          statusInfo = `\n\n✅ **Status:** Login completed`;
+        }
+
+        message = `I have submitted the xofu login credentials:\n\n📧 **Email:** ${data.email}${statusInfo}`;
       } else {
         // Handle custom form submission with dynamic field generation
         const formFields = (thisFormState as any).options?.formFields || [];
@@ -909,7 +1109,37 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
         <CrawlForm
           onSubmit={handleFormSubmit}
           onCancel={handleFormCancel}
-          websiteOptions={(thisFormState as any).options || []}
+          websiteOptions={(thisFormState as any).options?.websites || []}
+          crawlConfigOptions={(thisFormState as any).options?.crawlConfigs || []}
+          prefilledParams={(thisFormState as any).options?.prefilledParams || {}}
+          serverName={serverName}
+          isSubmitted={thisFormState.isSubmitted}
+          isCancelled={thisFormState.isCancelled}
+          submittedData={thisFormState.submittedData as any}
+        />
+      </>
+    );
+  }
+
+  if (toolConfig.formType === 'add_crawl_config') {
+    return (
+      <>
+        {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
+          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 p-4 shadow-lg dark:bg-orange-900/20">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
+              <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                {localize('com_ui_chat_disabled_complete_form')}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <AddCrawlConfigForm
+          onSubmit={handleFormSubmit}
+          onCancel={handleFormCancel}
+          prefilledParams={(thisFormState as any).options?.prefilledParams || {}}
+          serverName={serverName}
           isSubmitted={thisFormState.isSubmitted}
           isCancelled={thisFormState.isCancelled}
           submittedData={thisFormState.submittedData as any}
@@ -936,6 +1166,7 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
           onSubmit={handleFormSubmit}
           onCancel={handleFormCancel}
           formFields={(thisFormState as any).options?.formFields || []}
+          prefilledParams={(thisFormState as any).options?.prefilledParams || {}}
           isSubmitted={thisFormState.isSubmitted}
           isCancelled={thisFormState.isCancelled}
           submittedData={thisFormState.submittedData}
@@ -998,6 +1229,7 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
           serviceAccountOptions={options.serviceAccounts || []}
           websiteOptions={options.websites || []}
           keywordSources={options.keywordSources || ['gsc', 'dataforseo']}
+          prefilledParams={options.prefilledParams || {}}
           isSubmitted={thisFormState.isSubmitted}
           isCancelled={thisFormState.isCancelled}
           submittedData={thisFormState.submittedData as any}
@@ -1026,10 +1258,36 @@ export const MCPToolDetector: React.FC<MCPToolDetectorProps> = ({ toolCall, outp
           onSubmit={handleFormSubmit}
           onCancel={handleFormCancel}
           websiteOptions={options.websites || []}
+          prefilledParams={options.prefilledParams || {}}
           isSubmitted={thisFormState.isSubmitted}
           isCancelled={thisFormState.isCancelled}
           submittedData={thisFormState.submittedData as any}
           serverName={serverName}
+        />
+      </>
+    );
+  }
+
+  if (toolConfig.formType === 'xofu_login') {
+    return (
+      <>
+        {!thisFormState.isSubmitted && !thisFormState.isCancelled && (
+          <div className="my-4 rounded-xl border border-orange-400 bg-orange-50 p-4 shadow-lg dark:bg-orange-900/20">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
+              <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                {localize('com_ui_chat_disabled_complete_form')}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <XofuLoginForm
+          onSubmit={handleFormSubmit}
+          onCancel={handleFormCancel}
+          isSubmitted={thisFormState.isSubmitted}
+          isCancelled={thisFormState.isCancelled}
+          submittedData={thisFormState.submittedData as any}
         />
       </>
     );

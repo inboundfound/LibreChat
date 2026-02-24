@@ -9,6 +9,7 @@ import {
 import { memo } from 'react';
 import type { TMessageContentParts, TAttachment } from 'librechat-data-provider';
 import { OpenAIImageGen, EmptyText, Reasoning, ExecuteCode, AgentUpdate, Text } from './Parts';
+import { useShareContext } from '~/Providers';
 import { ErrorMessage } from './MessageContent';
 import RetrievalCall from './RetrievalCall';
 import AgentHandoff from './AgentHandoff';
@@ -18,6 +19,7 @@ import WebSearch from './WebSearch';
 import ToolCall from './ToolCall';
 import ImageGen from './ImageGen';
 import Image from './Image';
+import CompactionNotice from './CompactionNotice';
 import MCPToolDetector from './MCPToolDetector';
 
 type PartProps = {
@@ -31,6 +33,8 @@ type PartProps = {
 
 const Part = memo(
   ({ part, isSubmitting, attachments, isLast, showCursor, isCreatedByUser }: PartProps) => {
+    const { isSharedConvo } = useShareContext();
+
     if (!part) {
       return null;
     }
@@ -65,6 +69,19 @@ const Part = memo(
       if (typeof text !== 'string') {
         return null;
       }
+
+      // Render compaction notice as a styled card
+      if (text.startsWith('[compaction_notice]')) {
+        try {
+          const payload = JSON.parse(text.slice('[compaction_notice]'.length));
+          return (
+            <CompactionNotice droppedCount={payload.droppedCount} remaining={payload.remaining} />
+          );
+        } catch {
+          // fall through to regular text rendering
+        }
+      }
+
       if (part.tool_call_ids != null && !text) {
         return null;
       }
@@ -139,10 +156,10 @@ const Part = memo(
       } else if (isToolCall) {
         // Check if this is an MCP tool that should trigger a form
         const isMCPTool = toolCall.name && toolCall.name.includes(Constants.mcp_delimiter);
-        
+
         return (
           <>
-            {isMCPTool && (
+            {isMCPTool && !isSharedConvo && (
               <MCPToolDetector toolCall={toolCall} output={toolCall.output ?? ''} />
             )}
             <ToolCall
@@ -198,11 +215,12 @@ const Part = memo(
         }
 
         // Check if this is an MCP tool that should trigger a form
-        const isMCPTool = toolCall.function.name && toolCall.function.name.includes(Constants.mcp_delimiter);
-        
+        const isMCPTool =
+          toolCall.function.name && toolCall.function.name.includes(Constants.mcp_delimiter);
+
         return (
           <>
-            {isMCPTool && (
+            {isMCPTool && !isSharedConvo && (
               <MCPToolDetector
                 toolCall={{ name: toolCall.function.name }}
                 output={toolCall.function.output ?? ''}

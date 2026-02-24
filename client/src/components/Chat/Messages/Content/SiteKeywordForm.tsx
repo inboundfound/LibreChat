@@ -29,6 +29,7 @@ interface SiteKeywordFormProps {
   serviceAccountOptions?: ServiceAccountOption[];
   websiteOptions?: WebsiteOption[];
   keywordSources?: string[];
+  prefilledParams?: Record<string, string>;
   serverName?: string;
   isSubmitted?: boolean;
   isCancelled?: boolean;
@@ -45,6 +46,7 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
   serviceAccountOptions = [],
   websiteOptions = [],
   keywordSources = ['gsc', 'dataforseo'],
+  prefilledParams = {},
   serverName = '',
   isSubmitted = false,
   isCancelled = false,
@@ -60,20 +62,27 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Initialize default dates (last 30 days)
+  // Initialize default dates (last 30 days) and apply prefilled params
   useEffect(() => {
     const today = new Date();
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
+
     const formatDate = (date: Date) => date.toISOString().split('T')[0];
-    
+
     setFormData((prev) => ({
       ...prev,
-      start_date: formatDate(thirtyDaysAgo),
-      end_date: formatDate(today),
+      start_date: prefilledParams.start_date || formatDate(thirtyDaysAgo),
+      end_date: prefilledParams.end_date || formatDate(today),
+      ...(prefilledParams.website_id && { website_id: prefilledParams.website_id }),
+      ...(prefilledParams.service_account_id && {
+        service_account: prefilledParams.service_account_id,
+      }),
+      ...(prefilledParams.keywords_source && {
+        keywords_source: prefilledParams.keywords_source as 'gsc' | 'dataforseo',
+      }),
     }));
-  }, []);
+  }, [prefilledParams]);
 
   const handleInputChange = useCallback((field: keyof SiteKeywordFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -99,18 +108,18 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
       try {
         // Make direct API call to the MCP tool
         const toolId = `load_site_keyword_data_mcp_${serverName}`;
-        
+
         const payload: any = {
           keywords_source: formData.keywords_source,
           website_id: formData.website_id,
         };
-        
+
         if (formData.keywords_source === 'gsc') {
           payload.service_account = formData.service_account;
           payload.start_date = formData.start_date;
           payload.end_date = formData.end_date;
         }
-        
+
         console.log('🔍 Calling load_site_keyword_data_tool:', {
           toolId,
           payload,
@@ -120,7 +129,7 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(payload),
         });
@@ -142,9 +151,10 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
           statusText: response.statusText,
           hasResult: !!result.result,
           resultType: typeof result.result,
-          resultPreview: typeof result.result === 'string' 
-            ? result.result.substring(0, 200) 
-            : JSON.stringify(result.result).substring(0, 200),
+          resultPreview:
+            typeof result.result === 'string'
+              ? result.result.substring(0, 200)
+              : JSON.stringify(result.result).substring(0, 200),
           fullResult: result,
         });
 
@@ -160,11 +170,11 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
           toolId: `load_site_keyword_data_tool_mcp_${serverName}`,
         });
         // Still call onSubmit but with error info
-        onSubmit?.({ 
-          ...formData, 
-          toolResponse: { 
-            error: error instanceof Error ? error.message : 'Unknown error' 
-          } 
+        onSubmit?.({
+          ...formData,
+          toolResponse: {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          },
         });
       } finally {
         setIsSubmitting(false);
@@ -181,7 +191,7 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
     if (!formData.keywords_source || !formData.website_id) {
       return false;
     }
-    
+
     if (formData.keywords_source === 'gsc') {
       return !!(
         formData.service_account &&
@@ -190,7 +200,7 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
         formData.start_date <= formData.end_date
       );
     }
-    
+
     return true;
   };
 
@@ -201,9 +211,7 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
         <div className="mb-4">
           <div className="mb-2 flex items-center gap-2">
             <div className="h-3 w-3 rounded-full bg-red-500"></div>
-            <h3 className="text-lg font-semibold text-red-800 dark:text-red-200">
-              Form Cancelled
-            </h3>
+            <h3 className="text-lg font-semibold text-red-800 dark:text-red-200">Form Cancelled</h3>
           </div>
           <p className="text-sm text-red-700 dark:text-red-300">
             The site keyword data loading has been cancelled.
@@ -215,20 +223,23 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
 
   // Submitted state
   if (isSubmitted && submittedData) {
-    const sourceLabel = submittedData.keywords_source === 'gsc' ? 'Google Search Console' : 'DataForSEO';
+    const sourceLabel =
+      submittedData.keywords_source === 'gsc' ? 'Google Search Console' : 'DataForSEO';
     const website = websiteOptions.find((w) => w.id === submittedData.website_id);
     const websiteLabel = website ? `${website.name} (${website.url})` : submittedData.website_id;
-    const serviceAccount = serviceAccountOptions.find((sa) => sa.id === submittedData.service_account);
-    const serviceAccountLabel = serviceAccount ? serviceAccount.email : submittedData.service_account;
-    
+    const serviceAccount = serviceAccountOptions.find(
+      (sa) => sa.id === submittedData.service_account,
+    );
+    const serviceAccountLabel = serviceAccount
+      ? serviceAccount.email
+      : submittedData.service_account;
+
     return (
       <div className="my-4 rounded-xl border-2 border-green-500 bg-gray-800 p-4 shadow-lg">
         <div className="mb-4">
           <div className="mb-2 flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-green-500" />
-            <h3 className="text-lg font-semibold text-green-400">
-              Keyword Data Loading Submitted
-            </h3>
+            <h3 className="text-lg font-semibold text-green-400">Keyword Data Loading Submitted</h3>
           </div>
           <p className="text-sm text-green-300">
             The keyword data loading request has been submitted successfully.
@@ -270,9 +281,7 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
 
               {submittedData.start_date && submittedData.end_date && (
                 <div>
-                  <Label className="mb-2 block text-sm font-medium text-white">
-                    Date Range
-                  </Label>
+                  <Label className="mb-2 block text-sm font-medium text-white">Date Range</Label>
                   <div className="flex items-center gap-2 rounded-md border border-green-500 bg-gray-700 px-3 py-2 text-white opacity-75">
                     <Calendar className="h-4 w-4" />
                     <span>
@@ -352,7 +361,10 @@ const SiteKeywordForm: React.FC<SiteKeywordFormProps> = ({
           <>
             {/* Service Account Selector */}
             <div>
-              <Label htmlFor="service_account" className="mb-2 block text-sm font-medium text-white">
+              <Label
+                htmlFor="service_account"
+                className="mb-2 block text-sm font-medium text-white"
+              >
                 Service Account
               </Label>
               <select
